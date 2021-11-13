@@ -14,6 +14,7 @@ Desktop Banking Application - OmegaPay
 
 -- Preview
 ![image](https://user-images.githubusercontent.com/52403567/141645891-daeffb99-3b56-412b-a3c2-c297a1e57b7d.png)
+
 ![image](https://user-images.githubusercontent.com/52403567/141645878-56ad0a89-0894-41c6-861d-06ccae7a733c.png)
 
-
+![DB_Diagram](https://user-images.githubusercontent.com/52403567/141645962-cfda2227-5fe7-45ff-8aa5-2523701892a6.png)

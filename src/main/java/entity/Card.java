@@ -12,24 +12,24 @@ import java.util.Date;
  * @author dell
  */
 public class Card {
-    int cardID;
-    String omegaAccount;
-    String cardNumber;
-    String pIN;
-    Date expirationDate;
-    String cardHolderName;
-    String billingAddress;
-    float cardBalance;
-    String cardName;
+    private int cardID;
+    private String omegaAccount;
+    private String cardNumber;
+    private String PIN;
+    private Date expirationDate;
+    private String cardHolderName;
+    private String billingAddress;
+    private float cardBalance;
+    private String cardName;
 
     public Card() {
     }
 
-    public Card(int cardID, String omegaAccount, String cardNumber, String pIN, Date expirationDate, String cardHolderName, String billingAddress, float cardBalance, String cardName) {
+    public Card(int cardID, String omegaAccount, String cardNumber, String PIN, Date expirationDate, String cardHolderName, String billingAddress, float cardBalance, String cardName) {
         this.cardID = cardID;
         this.omegaAccount = omegaAccount;
         this.cardNumber = cardNumber;
-        this.pIN = pIN;
+        this.PIN = PIN;
         this.expirationDate = expirationDate;
         this.cardHolderName = cardHolderName;
         this.billingAddress = billingAddress;
@@ -61,12 +61,12 @@ public class Card {
         this.cardNumber = cardNumber;
     }
 
-    public String getpIN() {
-        return pIN;
+    public String getPIN() {
+        return PIN;
     }
 
-    public void setpIN(String pIN) {
-        this.pIN = pIN;
+    public void setPIN(String PIN) {
+        this.PIN = PIN;
     }
 
     public Date getExpirationDate() {

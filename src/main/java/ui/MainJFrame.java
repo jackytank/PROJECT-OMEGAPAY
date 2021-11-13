@@ -483,7 +483,7 @@ public class MainJFrame extends javax.swing.JFrame {
         ));
         jScrollPane1.setViewportView(jTable1);
 
-        pnlHomeSection.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(322, 67, 520, 520));
+        pnlHomeSection.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(322, 67, 570, 520));
 
         jLabel18.setFont(new java.awt.Font("Arial", 1, 12)); // NOI18N
         jLabel18.setText("OVERVIEW");

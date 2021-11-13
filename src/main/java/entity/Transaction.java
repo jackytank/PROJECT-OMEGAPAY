@@ -12,12 +12,12 @@ import java.util.Date;
  * @author dell
  */
 public class Transaction {
-    int transactionID;
-    Date transactionDate;
-    String fromAccount;
-    String toAccount;
-    float amount;
-    String note;
+    private int transactionID;
+    private Date transactionDate;
+    private String fromAccount;
+    private String toAccount;
+    private float amount;
+    private String note;
 
     public Transaction() {
     }

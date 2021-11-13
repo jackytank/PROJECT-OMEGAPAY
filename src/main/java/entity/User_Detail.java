@@ -12,29 +12,29 @@ import java.util.Date;
  * @author dell
  */
 public class User_Detail {
-   String omegaAccount;
-   String firstName;
-   String lastName;
-   String email;
-   String phone;
-   boolean gioiTinh;
-   Date birthday;
-   String address;
-   Date dayCreated;
-   String status;
-   String photo;
-   float omegaBalance;
+   private String omegaAccount;
+   private String firstName;
+   private String lastName;
+   private String email;
+   private String phone;
+   private boolean gender;
+   private Date birthday;
+   private String address;
+   private Date dayCreated = new Date();
+   private String status;
+   private String photo;
+   private float omegaBalance;
 
     public User_Detail() {
     }
 
-    public User_Detail(String omegaAccount, String firstName, String lastName, String email, String phone, boolean gioiTinh, Date birthday, String address, Date dayCreated, String status, String photo, float omegaBalance) {
+    public User_Detail(String omegaAccount, String firstName, String lastName, String email, String phone, boolean gender, Date birthday, String address, Date dayCreated, String status, String photo, float omegaBalance) {
         this.omegaAccount = omegaAccount;
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
         this.phone = phone;
-        this.gioiTinh = gioiTinh;
+        this.gender = gender;
         this.birthday = birthday;
         this.address = address;
         this.dayCreated = dayCreated;
@@ -83,12 +83,12 @@ public class User_Detail {
         this.phone = phone;
     }
 
-    public boolean isGioiTinh() {
-        return gioiTinh;
+    public boolean getGender() {
+        return gender;
     }
 
-    public void setGioiTinh(boolean gioiTinh) {
-        this.gioiTinh = gioiTinh;
+    public void setGender(boolean gender) {
+        this.gender = gender;
     }
 
     public Date getBirthday() {

@@ -10,9 +10,9 @@ package entity;
  * @author dell
  */
 public class User_Login {
-    String omegaAccount;
-    String username;
-    String password;
+    private String omegaAccount;
+    private String username;
+    private String password;
 
     public User_Login() {
     }

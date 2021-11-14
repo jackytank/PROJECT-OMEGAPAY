@@ -59,12 +59,12 @@ ALTER TABLE [dbo].[Card] CHECK CONSTRAINT [FK_Card_UserLogin]
 GO
 
 -- Insert demo value
-INSERT [dbo].[User_Login] ([OmegaAccount], [Username], [Password]) VALUES (N'dannytuan1997', N'Le Ninh Tuan', N'123456')
-INSERT [dbo].[User_Login] ([OmegaAccount], [Username], [Password]) VALUES (N'jackytank1337', N'To Minh Tri', N'123456')
-INSERT [dbo].[User_Login] ([OmegaAccount], [Username], [Password]) VALUES (N'quangteo2001', N'Nguyen Quang Teo', N'123456')
+INSERT [dbo].[User_Login] ([OmegaAccount], [Username], [Password]) VALUES (N'111299893443', N'Le Ninh Tuan', N'123456')
+INSERT [dbo].[User_Login] ([OmegaAccount], [Username], [Password]) VALUES (N'690078902233', N'To Minh Tri', N'123456')
+INSERT [dbo].[User_Login] ([OmegaAccount], [Username], [Password]) VALUES (N'456799331248', N'Nguyen Quang Teo', N'123456')
 GO
 
-INSERT [dbo].[User_Detail] ([OmegaAccount], [FirstName], [LastName], [Email], [Phone], [Gender], [Birthday], [Address], [DayCreated], [Status], [Photo], [OmegaBalance]) VALUES (N'jackytank1337', N'Tri', N'To Minh', N'abc@gmai.com', N'0331873382', 0, CAST(N'2005-03-01' AS Date), N'No.339 St. 1A, Long An', CAST(N'2021-11-14' AS Date), N'Platinum', N'elonmusk.png',304000)
+INSERT [dbo].[User_Detail] ([OmegaAccount], [FirstName], [LastName], [Email], [Phone], [Gender], [Birthday], [Address], [DayCreated], [Status], [Photo], [OmegaBalance]) VALUES (N'690078902233', N'Tri', N'To Minh', N'abc@gmai.com', N'0331873382', 0, CAST(N'2005-03-01' AS Date), N'No.339 St. 1A, Long An', CAST(N'2021-11-14' AS Date), N'Platinum', N'elonmusk.png',304000)
 GO
 
 SET IDENTITY_INSERT [dbo].[Card] ON 
@@ -76,8 +76,8 @@ SET IDENTITY_INSERT [dbo].[Card] OFF
 GO
 SET IDENTITY_INSERT [dbo].[Transaction] ON 
 
-INSERT [dbo].[Transaction] ([TransactionID], [TransactionDate], [FromAccount], [ToAccount], [Amount], [Note]) VALUES (1, CAST(N'2021-11-15' AS Date), N'jackytank1337', N'quangteo2001', 30000000, N'Tra no cuoi nam')
-INSERT [dbo].[Transaction] ([TransactionID], [TransactionDate], [FromAccount], [ToAccount], [Amount], [Note]) VALUES (6, CAST(N'2021-11-18' AS Date), N'quangteo2001', N'jackytank1337', 500000, N'Li xi tet')
+INSERT [dbo].[Transaction] ([TransactionID], [TransactionDate], [FromAccount], [ToAccount], [Amount], [Note]) VALUES (1, CAST(N'2021-11-15' AS Date), N'111299893443', N'690078902233', 30000000, N'Tra no cuoi nam')
+INSERT [dbo].[Transaction] ([TransactionID], [TransactionDate], [FromAccount], [ToAccount], [Amount], [Note]) VALUES (6, CAST(N'2021-11-18' AS Date), N'456799331248', N'456799331248', 500000, N'Li xi tet')
 SET IDENTITY_INSERT [dbo].[Transaction] OFF
 GO
 

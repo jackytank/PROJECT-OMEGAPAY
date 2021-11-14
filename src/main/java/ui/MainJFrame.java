@@ -6,6 +6,7 @@
 package ui;
 
 import com.formdev.flatlaf.FlatLightLaf;
+import helper.AuthUser;
 import java.awt.Color;
 import javax.swing.JButton;
 import javax.swing.JPanel;
@@ -1271,6 +1272,7 @@ public class MainJFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_pnlAccountMouseExited
 
     private void pnlLogoutMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_pnlLogoutMouseClicked
+        AuthUser.clear();
         this.dispose();
         new LoginJFrame().setVisible(true);
     }//GEN-LAST:event_pnlLogoutMouseClicked

@@ -6,8 +6,11 @@
 package ui;
 
 import com.formdev.flatlaf.FlatLightLaf;
-import java.awt.Color;
-import javax.swing.JPanel;
+import dao.UserLoginDAO;
+import entity.User_Login;
+import helper.AuthUser;
+import helper.MsgHelper;
+import java.awt.event.KeyEvent;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
@@ -17,6 +20,8 @@ import javax.swing.UnsupportedLookAndFeelException;
  */
 public class LoginJFrame extends javax.swing.JFrame {
 
+    UserLoginDAO dao = new UserLoginDAO();
+
     /**
      * Creates new form LoginJFrame
      */
@@ -24,6 +29,21 @@ public class LoginJFrame extends javax.swing.JFrame {
         initComponents();
         setLocationRelativeTo(null);
         setTitle("OMEGAPAY");
+    }
+
+    void login() {
+        String username = txtAccount.getText();
+        String password = new String(txtPassword.getPassword());
+        User_Login user = dao.selectByID(username);
+        if (user == null) {
+            MsgHelper.alert(this, "Wrong username!");
+        } else if (!password.equals(user.getPassword())) {
+            MsgHelper.alert(this, "Wrong password!");
+        } else {
+            AuthUser.user = user;
+            this.dispose();
+            new GreetJDialog(this, rootPaneCheckingEnabled).setVisible(true);
+        }
     }
 
     /**
@@ -38,13 +58,13 @@ public class LoginJFrame extends javax.swing.JFrame {
         pnlMain = new javax.swing.JPanel();
         pnlLeft = new javax.swing.JPanel();
         pnlSigninSection = new javax.swing.JPanel();
-        jTextField1 = new javax.swing.JTextField();
-        jPasswordField1 = new javax.swing.JPasswordField();
-        jButton2 = new javax.swing.JButton();
+        txtAccount = new javax.swing.JTextField();
+        txtPassword = new javax.swing.JPasswordField();
+        btnSignin = new javax.swing.JButton();
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
-        jCheckBox1 = new javax.swing.JCheckBox();
-        jLabel5 = new javax.swing.JLabel();
+        chkShowpassword = new javax.swing.JCheckBox();
+        lblWelcomeback = new javax.swing.JLabel();
         jSeparator1 = new javax.swing.JSeparator();
         pnlSignupSection = new javax.swing.JPanel();
         jTextField2 = new javax.swing.JTextField();
@@ -60,8 +80,8 @@ public class LoginJFrame extends javax.swing.JFrame {
         jPasswordField3 = new javax.swing.JPasswordField();
         jLabel11 = new javax.swing.JLabel();
         pnlRight = new javax.swing.JPanel();
-        jLabel3 = new javax.swing.JLabel();
-        jLabel13 = new javax.swing.JLabel();
+        lblOmegaSymbol = new javax.swing.JLabel();
+        lblOmegaTitle = new javax.swing.JLabel();
         pnlSignup = new javax.swing.JPanel();
         lblSign = new javax.swing.JLabel();
         pnlChangePassword = new javax.swing.JPanel();
@@ -76,21 +96,33 @@ public class LoginJFrame extends javax.swing.JFrame {
 
         pnlSigninSection.setBackground(new java.awt.Color(255, 255, 255));
         pnlSigninSection.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
-        pnlSigninSection.add(jTextField1, new org.netbeans.lib.awtextra.AbsoluteConstraints(144, 256, 326, 36));
 
-        jPasswordField1.setText("jPasswordField1");
-        pnlSigninSection.add(jPasswordField1, new org.netbeans.lib.awtextra.AbsoluteConstraints(144, 342, 326, 36));
-
-        jButton2.setBackground(new java.awt.Color(238, 0, 51));
-        jButton2.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
-        jButton2.setForeground(new java.awt.Color(255, 255, 255));
-        jButton2.setText("SIGN IN");
-        jButton2.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton2ActionPerformed(evt);
+        txtAccount.setText("To Minh Tri");
+        txtAccount.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                txtAccountKeyPressed(evt);
             }
         });
-        pnlSigninSection.add(jButton2, new org.netbeans.lib.awtextra.AbsoluteConstraints(256, 445, 96, 36));
+        pnlSigninSection.add(txtAccount, new org.netbeans.lib.awtextra.AbsoluteConstraints(144, 256, 326, 36));
+
+        txtPassword.setText("123456");
+        txtPassword.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                txtPasswordKeyPressed(evt);
+            }
+        });
+        pnlSigninSection.add(txtPassword, new org.netbeans.lib.awtextra.AbsoluteConstraints(144, 342, 326, 36));
+
+        btnSignin.setBackground(new java.awt.Color(238, 0, 51));
+        btnSignin.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        btnSignin.setForeground(new java.awt.Color(255, 255, 255));
+        btnSignin.setText("SIGN IN");
+        btnSignin.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnSigninActionPerformed(evt);
+            }
+        });
+        pnlSigninSection.add(btnSignin, new org.netbeans.lib.awtextra.AbsoluteConstraints(256, 445, 96, 36));
 
         jLabel1.setText("Username");
         pnlSigninSection.add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(144, 234, 85, -1));
@@ -98,18 +130,18 @@ public class LoginJFrame extends javax.swing.JFrame {
         jLabel2.setText("Password");
         pnlSigninSection.add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(144, 320, 86, -1));
 
-        jCheckBox1.setText("Show password");
-        jCheckBox1.addActionListener(new java.awt.event.ActionListener() {
+        chkShowpassword.setText("Show password");
+        chkShowpassword.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jCheckBox1ActionPerformed(evt);
+                chkShowpasswordActionPerformed(evt);
             }
         });
-        pnlSigninSection.add(jCheckBox1, new org.netbeans.lib.awtextra.AbsoluteConstraints(144, 390, 143, -1));
+        pnlSigninSection.add(chkShowpassword, new org.netbeans.lib.awtextra.AbsoluteConstraints(144, 390, 143, -1));
 
-        jLabel5.setFont(new java.awt.Font("Segoe UI", 1, 36)); // NOI18N
-        jLabel5.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel5.setText(" WELCOME BACK");
-        pnlSigninSection.add(jLabel5, new org.netbeans.lib.awtextra.AbsoluteConstraints(140, 100, 330, 33));
+        lblWelcomeback.setFont(new java.awt.Font("Segoe UI", 1, 36)); // NOI18N
+        lblWelcomeback.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        lblWelcomeback.setText(" WELCOME BACK");
+        pnlSigninSection.add(lblWelcomeback, new org.netbeans.lib.awtextra.AbsoluteConstraints(140, 100, 330, 33));
         pnlSigninSection.add(jSeparator1, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 140, 250, 20));
 
         pnlLeft.add(pnlSigninSection, "card2");
@@ -166,16 +198,16 @@ public class LoginJFrame extends javax.swing.JFrame {
 
         pnlRight.setBackground(new java.awt.Color(238, 0, 51));
 
-        jLabel3.setBackground(new java.awt.Color(255, 255, 255));
-        jLabel3.setFont(new java.awt.Font("Segoe UI", 1, 100)); // NOI18N
-        jLabel3.setForeground(new java.awt.Color(255, 255, 255));
-        jLabel3.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel3.setText("Ω");
+        lblOmegaSymbol.setBackground(new java.awt.Color(255, 255, 255));
+        lblOmegaSymbol.setFont(new java.awt.Font("Segoe UI", 1, 100)); // NOI18N
+        lblOmegaSymbol.setForeground(new java.awt.Color(255, 255, 255));
+        lblOmegaSymbol.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        lblOmegaSymbol.setText("Ω");
 
-        jLabel13.setFont(new java.awt.Font("Segoe UI", 1, 30)); // NOI18N
-        jLabel13.setForeground(new java.awt.Color(255, 255, 255));
-        jLabel13.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel13.setText("OMEGAPAY");
+        lblOmegaTitle.setFont(new java.awt.Font("Segoe UI", 1, 30)); // NOI18N
+        lblOmegaTitle.setForeground(new java.awt.Color(255, 255, 255));
+        lblOmegaTitle.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        lblOmegaTitle.setText("OMEGAPAY");
 
         pnlSignup.setBackground(new java.awt.Color(238, 0, 51));
         pnlSignup.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
@@ -266,10 +298,10 @@ public class LoginJFrame extends javax.swing.JFrame {
             pnlRightLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(pnlRightLayout.createSequentialGroup()
                 .addGap(97, 97, 97)
-                .addComponent(jLabel3))
+                .addComponent(lblOmegaSymbol))
             .addGroup(pnlRightLayout.createSequentialGroup()
                 .addGap(41, 41, 41)
-                .addComponent(jLabel13, javax.swing.GroupLayout.PREFERRED_SIZE, 192, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addComponent(lblOmegaTitle, javax.swing.GroupLayout.PREFERRED_SIZE, 192, javax.swing.GroupLayout.PREFERRED_SIZE))
             .addGroup(pnlRightLayout.createSequentialGroup()
                 .addGap(10, 10, 10)
                 .addComponent(pnlSignup, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -284,9 +316,9 @@ public class LoginJFrame extends javax.swing.JFrame {
             pnlRightLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(pnlRightLayout.createSequentialGroup()
                 .addGap(53, 53, 53)
-                .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 94, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(lblOmegaSymbol, javax.swing.GroupLayout.PREFERRED_SIZE, 94, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(6, 6, 6)
-                .addComponent(jLabel13)
+                .addComponent(lblOmegaTitle)
                 .addGap(98, 98, 98)
                 .addComponent(pnlSignup, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -324,18 +356,21 @@ public class LoginJFrame extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void jCheckBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBox1ActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_jCheckBox1ActionPerformed
+    private void chkShowpasswordActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_chkShowpasswordActionPerformed
+        if (chkShowpassword.isSelected()) {
+            txtPassword.setEchoChar((char) 0);
+        } else {
+            txtPassword.setEchoChar('*');
+        }
+    }//GEN-LAST:event_chkShowpasswordActionPerformed
 
     private void jCheckBox2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBox2ActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_jCheckBox2ActionPerformed
 
-    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-        this.dispose();
-        new GreetJDialog(this, rootPaneCheckingEnabled).setVisible(true);
-    }//GEN-LAST:event_jButton2ActionPerformed
+    private void btnSigninActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSigninActionPerformed
+        login();
+    }//GEN-LAST:event_btnSigninActionPerformed
 
     private void pnlSignupMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_pnlSignupMouseReleased
 
@@ -346,7 +381,7 @@ public class LoginJFrame extends javax.swing.JFrame {
             lblSign.setText("SIGN UP");
             pnlSigninSection.setVisible(false);
             pnlSignupSection.setVisible(true);
-        } else if(pnlSignupSection.isVisible()){
+        } else if (pnlSignupSection.isVisible()) {
             lblSign.setText("SIGN IN");
             pnlSigninSection.setVisible(true);
             pnlSignupSection.setVisible(false);
@@ -357,6 +392,18 @@ public class LoginJFrame extends javax.swing.JFrame {
         this.dispose();
         new SignupDetailsJDialog(this, rootPaneCheckingEnabled).setVisible(true);
     }//GEN-LAST:event_jButton3ActionPerformed
+
+    private void txtAccountKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtAccountKeyPressed
+        if (evt.getKeyCode() == KeyEvent.VK_ENTER) {
+            login();
+        }
+    }//GEN-LAST:event_txtAccountKeyPressed
+
+    private void txtPasswordKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtPasswordKeyPressed
+        if (evt.getKeyCode() == KeyEvent.VK_ENTER) {
+            login();
+        }
+    }//GEN-LAST:event_txtPasswordKeyPressed
 
     /**
      * @param args the command line arguments
@@ -399,31 +446,29 @@ public class LoginJFrame extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton jButton2;
+    private javax.swing.JButton btnSignin;
+    private javax.swing.JCheckBox chkShowpassword;
     private javax.swing.JButton jButton3;
-    private javax.swing.JCheckBox jCheckBox1;
     private javax.swing.JCheckBox jCheckBox2;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
     private javax.swing.JLabel jLabel12;
-    private javax.swing.JLabel jLabel13;
     private javax.swing.JLabel jLabel14;
     private javax.swing.JLabel jLabel2;
-    private javax.swing.JLabel jLabel3;
-    private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel6;
     private javax.swing.JLabel jLabel7;
     private javax.swing.JLabel jLabel9;
-    private javax.swing.JPasswordField jPasswordField1;
     private javax.swing.JPasswordField jPasswordField2;
     private javax.swing.JPasswordField jPasswordField3;
     private javax.swing.JSeparator jSeparator1;
     private javax.swing.JSeparator jSeparator2;
-    private javax.swing.JTextField jTextField1;
     private javax.swing.JTextField jTextField2;
     private javax.swing.JTextField jTextField3;
+    private javax.swing.JLabel lblOmegaSymbol;
+    private javax.swing.JLabel lblOmegaTitle;
     private javax.swing.JLabel lblSign;
+    private javax.swing.JLabel lblWelcomeback;
     private javax.swing.JPanel pnlChangePassword;
     private javax.swing.JPanel pnlExit;
     private javax.swing.JPanel pnlLeft;
@@ -432,5 +477,7 @@ public class LoginJFrame extends javax.swing.JFrame {
     private javax.swing.JPanel pnlSigninSection;
     private javax.swing.JPanel pnlSignup;
     private javax.swing.JPanel pnlSignupSection;
+    private javax.swing.JTextField txtAccount;
+    private javax.swing.JPasswordField txtPassword;
     // End of variables declaration//GEN-END:variables
 }

@@ -18,14 +18,6 @@ public class JDBCHelper {
     public static String USERNAME = "sa";
     public static String PASSWORD = "1221";
 
-    static {
-        try {
-            Class.forName(DRIVER);
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     public static PreparedStatement preparedStatement(String SQL, Object... args) {
         try {
             Connection conn = DriverManager.getConnection(DB_URL, USERNAME, PASSWORD);

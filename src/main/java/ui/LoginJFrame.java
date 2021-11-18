@@ -13,6 +13,7 @@ import helper.MsgHelper;
 import java.awt.event.KeyEvent;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
+import java.util.Random;
 
 /**
  *
@@ -20,7 +21,7 @@ import javax.swing.UnsupportedLookAndFeelException;
  */
 public class LoginJFrame extends javax.swing.JFrame {
 
-    UserLoginDAO dao = new UserLoginDAO();
+    UserLoginDAO userLoginDAO = new UserLoginDAO();
 
     /**
      * Creates new form LoginJFrame
@@ -31,19 +32,64 @@ public class LoginJFrame extends javax.swing.JFrame {
         setTitle("OMEGAPAY");
     }
 
-    void login() {
-        String username = txtAccount.getText();
-        String password = new String(txtPassword.getPassword());
-        User_Login user = dao.selectByID(username);
-        if (user == null) {
-            MsgHelper.alert(this, "Wrong username!");
-        } else if (!password.equals(user.getPassword())) {
-            MsgHelper.alert(this, "Wrong password!");
+    //-------------- Sign in section -------------
+    private void login() {
+        String username = txtUserSignin.getText();
+        String password = new String(txtPassSignin.getPassword());
+        User_Login user = userLoginDAO.selectByID(username);
+        if (!username.equalsIgnoreCase(user.getUsername()) || !password.equals(user.getPassword())) {
+            MsgHelper.alert(this, "Wrong username or password!");
         } else {
             AuthUser.user = user;
             this.dispose();
             new GreetJDialog(this, rootPaneCheckingEnabled).setVisible(true);
         }
+    }
+
+    //-------------- Sign up section -------------
+    private void signup() {
+        String username = txtUserSignup.getText();
+        String password = new String(txtPassSignup.getPassword());
+        String retype = new String(txtRetypeSignup.getPassword());
+        User_Login user = getSignupForm();
+        boolean isUserExist = (userLoginDAO.selectByID(username) != null);
+        String error = "";
+        if (isUserExist) {
+            error += "Username is already exist!\n";
+        } else if (username.equals("") || password.equals("") || retype.equals("")) {
+            error += "Fields must not be empty!\n";
+        } else if (username.length() < 6) {
+            error += "Username length must longer than 6 letters!\n";
+        } else if (password.length() < 8) {
+            error += "Password length must longer than 8 letters!\n";
+        } else if (!password.equals(retype)) {
+            error += "Password and retype didn't match!\n";
+        } else {
+            try {
+                userLoginDAO.insert(user);
+                MsgHelper.alert(this, "Create account successfully!\n");
+                this.dispose();
+                new SignupDetailsJDialog(this, rootPaneCheckingEnabled, user.getOmegaAccount()).setVisible(true);
+            } catch (Exception e) {
+                error = "Unknown error has occured!\n";
+            }
+        }
+        if (!error.equals("")) {
+            MsgHelper.alert(this, error);
+        }
+    }
+
+    private User_Login getSignupForm() {
+        User_Login user = new User_Login();
+        user.setOmegaAccount(generateOmegaAccount());
+        user.setUsername(txtUserSignup.getText());
+        user.setPassword(new String(txtPassSignup.getPassword()));
+        return user;
+    }
+
+    // random omegaAccount voi do dai 12
+    private String generateOmegaAccount() {
+        return "" + (100000 + new Random().nextInt(900000)) + (100000 + new Random().nextInt(900000));
     }
 
     /**
@@ -58,26 +104,24 @@ public class LoginJFrame extends javax.swing.JFrame {
         pnlMain = new javax.swing.JPanel();
         pnlLeft = new javax.swing.JPanel();
         pnlSigninSection = new javax.swing.JPanel();
-        txtAccount = new javax.swing.JTextField();
-        txtPassword = new javax.swing.JPasswordField();
+        txtUserSignin = new javax.swing.JTextField();
+        txtPassSignin = new javax.swing.JPasswordField();
         btnSignin = new javax.swing.JButton();
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
-        chkShowpassword = new javax.swing.JCheckBox();
+        chkShowPass = new javax.swing.JCheckBox();
         lblWelcomeback = new javax.swing.JLabel();
         jSeparator1 = new javax.swing.JSeparator();
         pnlSignupSection = new javax.swing.JPanel();
-        jTextField2 = new javax.swing.JTextField();
-        jPasswordField2 = new javax.swing.JPasswordField();
+        txtUserSignup = new javax.swing.JTextField();
+        txtRetypeSignup = new javax.swing.JPasswordField();
         jButton3 = new javax.swing.JButton();
         jLabel6 = new javax.swing.JLabel();
         jLabel10 = new javax.swing.JLabel();
-        jCheckBox2 = new javax.swing.JCheckBox();
+        chkShowPass2 = new javax.swing.JCheckBox();
         jLabel14 = new javax.swing.JLabel();
         jSeparator2 = new javax.swing.JSeparator();
-        jTextField3 = new javax.swing.JTextField();
-        jLabel7 = new javax.swing.JLabel();
-        jPasswordField3 = new javax.swing.JPasswordField();
+        txtPassSignup = new javax.swing.JPasswordField();
         jLabel11 = new javax.swing.JLabel();
         pnlRight = new javax.swing.JPanel();
         lblOmegaSymbol = new javax.swing.JLabel();
@@ -97,21 +141,21 @@ public class LoginJFrame extends javax.swing.JFrame {
         pnlSigninSection.setBackground(new java.awt.Color(255, 255, 255));
         pnlSigninSection.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
-        txtAccount.setText("To Minh Tri");
-        txtAccount.addKeyListener(new java.awt.event.KeyAdapter() {
+        txtUserSignin.setText("To Minh Tri");
+        txtUserSignin.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyPressed(java.awt.event.KeyEvent evt) {
-                txtAccountKeyPressed(evt);
+                txtUserSigninKeyPressed(evt);
             }
         });
-        pnlSigninSection.add(txtAccount, new org.netbeans.lib.awtextra.AbsoluteConstraints(144, 256, 326, 36));
+        pnlSigninSection.add(txtUserSignin, new org.netbeans.lib.awtextra.AbsoluteConstraints(144, 256, 326, 36));
 
-        txtPassword.setText("123456");
-        txtPassword.addKeyListener(new java.awt.event.KeyAdapter() {
+        txtPassSignin.setText("123456");
+        txtPassSignin.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyPressed(java.awt.event.KeyEvent evt) {
-                txtPasswordKeyPressed(evt);
+                txtPassSigninKeyPressed(evt);
             }
         });
-        pnlSigninSection.add(txtPassword, new org.netbeans.lib.awtextra.AbsoluteConstraints(144, 342, 326, 36));
+        pnlSigninSection.add(txtPassSignin, new org.netbeans.lib.awtextra.AbsoluteConstraints(144, 342, 326, 36));
 
         btnSignin.setBackground(new java.awt.Color(238, 0, 51));
         btnSignin.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
@@ -130,13 +174,13 @@ public class LoginJFrame extends javax.swing.JFrame {
         jLabel2.setText("Password");
         pnlSigninSection.add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(144, 320, 86, -1));
 
-        chkShowpassword.setText("Show password");
-        chkShowpassword.addActionListener(new java.awt.event.ActionListener() {
+        chkShowPass.setText("Show password");
+        chkShowPass.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                chkShowpasswordActionPerformed(evt);
+                chkShowPassActionPerformed(evt);
             }
         });
-        pnlSigninSection.add(chkShowpassword, new org.netbeans.lib.awtextra.AbsoluteConstraints(144, 390, 143, -1));
+        pnlSigninSection.add(chkShowPass, new org.netbeans.lib.awtextra.AbsoluteConstraints(144, 390, 143, -1));
 
         lblWelcomeback.setFont(new java.awt.Font("Segoe UI", 1, 36)); // NOI18N
         lblWelcomeback.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
@@ -148,10 +192,10 @@ public class LoginJFrame extends javax.swing.JFrame {
 
         pnlSignupSection.setBackground(new java.awt.Color(255, 255, 255));
         pnlSignupSection.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
-        pnlSignupSection.add(jTextField2, new org.netbeans.lib.awtextra.AbsoluteConstraints(140, 200, 326, 36));
+        pnlSignupSection.add(txtUserSignup, new org.netbeans.lib.awtextra.AbsoluteConstraints(140, 200, 326, 36));
 
-        jPasswordField2.setText("jPasswordField1");
-        pnlSignupSection.add(jPasswordField2, new org.netbeans.lib.awtextra.AbsoluteConstraints(140, 340, 326, 36));
+        txtRetypeSignup.setText("jPasswordField1");
+        pnlSignupSection.add(txtRetypeSignup, new org.netbeans.lib.awtextra.AbsoluteConstraints(140, 340, 326, 36));
 
         jButton3.setBackground(new java.awt.Color(238, 0, 51));
         jButton3.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
@@ -170,26 +214,22 @@ public class LoginJFrame extends javax.swing.JFrame {
         jLabel10.setText("Retype password");
         pnlSignupSection.add(jLabel10, new org.netbeans.lib.awtextra.AbsoluteConstraints(140, 320, 120, -1));
 
-        jCheckBox2.setText("Show password");
-        jCheckBox2.addActionListener(new java.awt.event.ActionListener() {
+        chkShowPass2.setText("Show password");
+        chkShowPass2.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jCheckBox2ActionPerformed(evt);
+                chkShowPass2ActionPerformed(evt);
             }
         });
-        pnlSignupSection.add(jCheckBox2, new org.netbeans.lib.awtextra.AbsoluteConstraints(140, 390, 143, -1));
+        pnlSignupSection.add(chkShowPass2, new org.netbeans.lib.awtextra.AbsoluteConstraints(140, 390, 143, -1));
 
         jLabel14.setFont(new java.awt.Font("Segoe UI", 1, 36)); // NOI18N
         jLabel14.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabel14.setText("SIGN UP");
-        pnlSignupSection.add(jLabel14, new org.netbeans.lib.awtextra.AbsoluteConstraints(140, 30, 330, 33));
-        pnlSignupSection.add(jSeparator2, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 70, 250, 20));
-        pnlSignupSection.add(jTextField3, new org.netbeans.lib.awtextra.AbsoluteConstraints(140, 130, 326, 36));
+        pnlSignupSection.add(jLabel14, new org.netbeans.lib.awtextra.AbsoluteConstraints(140, 70, 330, 33));
+        pnlSignupSection.add(jSeparator2, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 110, 250, 20));
 
-        jLabel7.setText("Omega Account");
-        pnlSignupSection.add(jLabel7, new org.netbeans.lib.awtextra.AbsoluteConstraints(140, 100, 120, -1));
-
-        jPasswordField3.setText("jPasswordField1");
-        pnlSignupSection.add(jPasswordField3, new org.netbeans.lib.awtextra.AbsoluteConstraints(140, 270, 326, 36));
+        txtPassSignup.setText("jPasswordField1");
+        pnlSignupSection.add(txtPassSignup, new org.netbeans.lib.awtextra.AbsoluteConstraints(140, 270, 326, 36));
 
         jLabel11.setText("Password");
         pnlSignupSection.add(jLabel11, new org.netbeans.lib.awtextra.AbsoluteConstraints(140, 250, 86, -1));
@@ -244,6 +284,11 @@ public class LoginJFrame extends javax.swing.JFrame {
 
         pnlChangePassword.setBackground(new java.awt.Color(238, 0, 51));
         pnlChangePassword.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        pnlChangePassword.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                pnlChangePasswordMouseClicked(evt);
+            }
+        });
 
         jLabel9.setBackground(new java.awt.Color(51, 255, 51));
         jLabel9.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
@@ -269,6 +314,11 @@ public class LoginJFrame extends javax.swing.JFrame {
 
         pnlExit.setBackground(new java.awt.Color(238, 0, 51));
         pnlExit.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        pnlExit.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                pnlExitMouseClicked(evt);
+            }
+        });
 
         jLabel12.setBackground(new java.awt.Color(51, 255, 51));
         jLabel12.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
@@ -356,17 +406,23 @@ public class LoginJFrame extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void chkShowpasswordActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_chkShowpasswordActionPerformed
-        if (chkShowpassword.isSelected()) {
-            txtPassword.setEchoChar((char) 0);
+    private void chkShowPassActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_chkShowPassActionPerformed
+        if (chkShowPass.isSelected()) {
+            txtPassSignin.setEchoChar((char) 0);
         } else {
-            txtPassword.setEchoChar('*');
+            txtPassSignin.setEchoChar('*');
         }
-    }//GEN-LAST:event_chkShowpasswordActionPerformed
+    }//GEN-LAST:event_chkShowPassActionPerformed
 
-    private void jCheckBox2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBox2ActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_jCheckBox2ActionPerformed
+    private void chkShowPass2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_chkShowPass2ActionPerformed
+        if (chkShowPass2.isSelected()) {
+            txtPassSignup.setEchoChar((char) 0);
+            txtRetypeSignup.setEchoChar((char) 0);
+        } else {
+            txtPassSignup.setEchoChar('*');
+            txtRetypeSignup.setEchoChar('*');
+        }
+    }//GEN-LAST:event_chkShowPass2ActionPerformed
 
     private void btnSigninActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSigninActionPerformed
         login();
@@ -389,21 +445,29 @@ public class LoginJFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_pnlSignupMouseClicked
 
     private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
-        this.dispose();
-        new SignupDetailsJDialog(this, rootPaneCheckingEnabled).setVisible(true);
+        signup();
     }//GEN-LAST:event_jButton3ActionPerformed
 
-    private void txtAccountKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtAccountKeyPressed
+    private void txtUserSigninKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtUserSigninKeyPressed
         if (evt.getKeyCode() == KeyEvent.VK_ENTER) {
             login();
         }
-    }//GEN-LAST:event_txtAccountKeyPressed
+    }//GEN-LAST:event_txtUserSigninKeyPressed
 
-    private void txtPasswordKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtPasswordKeyPressed
+    private void txtPassSigninKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtPassSigninKeyPressed
         if (evt.getKeyCode() == KeyEvent.VK_ENTER) {
             login();
         }
-    }//GEN-LAST:event_txtPasswordKeyPressed
+    }//GEN-LAST:event_txtPassSigninKeyPressed
+
+    private void pnlExitMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_pnlExitMouseClicked
+        System.exit(0);
+    }//GEN-LAST:event_pnlExitMouseClicked
+
+    private void pnlChangePasswordMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_pnlChangePasswordMouseClicked
+        this.dispose();
+        new ChangePasswordJDialog(this, rootPaneCheckingEnabled).setVisible(true);
+    }//GEN-LAST:event_pnlChangePasswordMouseClicked
 
     /**
      * @param args the command line arguments
@@ -447,9 +511,9 @@ public class LoginJFrame extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnSignin;
-    private javax.swing.JCheckBox chkShowpassword;
+    private javax.swing.JCheckBox chkShowPass;
+    private javax.swing.JCheckBox chkShowPass2;
     private javax.swing.JButton jButton3;
-    private javax.swing.JCheckBox jCheckBox2;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
@@ -457,14 +521,9 @@ public class LoginJFrame extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel14;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel6;
-    private javax.swing.JLabel jLabel7;
     private javax.swing.JLabel jLabel9;
-    private javax.swing.JPasswordField jPasswordField2;
-    private javax.swing.JPasswordField jPasswordField3;
     private javax.swing.JSeparator jSeparator1;
     private javax.swing.JSeparator jSeparator2;
-    private javax.swing.JTextField jTextField2;
-    private javax.swing.JTextField jTextField3;
     private javax.swing.JLabel lblOmegaSymbol;
     private javax.swing.JLabel lblOmegaTitle;
     private javax.swing.JLabel lblSign;
@@ -477,7 +536,10 @@ public class LoginJFrame extends javax.swing.JFrame {
     private javax.swing.JPanel pnlSigninSection;
     private javax.swing.JPanel pnlSignup;
     private javax.swing.JPanel pnlSignupSection;
-    private javax.swing.JTextField txtAccount;
-    private javax.swing.JPasswordField txtPassword;
+    private javax.swing.JPasswordField txtPassSignin;
+    private javax.swing.JPasswordField txtPassSignup;
+    private javax.swing.JPasswordField txtRetypeSignup;
+    private javax.swing.JTextField txtUserSignin;
+    private javax.swing.JTextField txtUserSignup;
     // End of variables declaration//GEN-END:variables
 }

@@ -20,7 +20,7 @@ public class User_Detail {
    private boolean gender;
    private Date birthday;
    private String address;
-   private Date dayCreated = new Date();
+   private Date dayCreated;
    private String status;
    private String photo;
    private float omegaBalance;

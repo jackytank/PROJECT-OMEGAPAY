@@ -20,7 +20,7 @@ public class UserLoginDAO extends OmegaPayDAO<User_Login, String> {
 
     String INSERT_SQL = "INSERT INTO User_Login(OmegaAccount, Username, Password) VALUES(?,?,?)";
     String UPDATE_SQL = "UPDATE User_Login SET Password=? WHERE OmegaAccount=?";
-    String SELECT_BY_ID_SQL = "SELECT * FROM User_Login WHERE Username=?";
+    String SELECT_BY_USERNAME_SQL = "SELECT * FROM User_Login WHERE Username=?";
 
     @Override
     public void insert(User_Login entity) {
@@ -43,8 +43,8 @@ public class UserLoginDAO extends OmegaPayDAO<User_Login, String> {
     }
 
     @Override
-    public User_Login selectByID(String id) {
-        List<User_Login> list = this.selectBySQL(SELECT_BY_ID_SQL, id);
+    public User_Login selectByID(String username) {
+        List<User_Login> list = this.selectBySQL(SELECT_BY_USERNAME_SQL, username);
         if (list.isEmpty()) {
             return null;
         }

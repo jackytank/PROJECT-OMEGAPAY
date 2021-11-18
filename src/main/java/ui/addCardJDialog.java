@@ -23,12 +23,12 @@ public class addCardJDialog extends javax.swing.JDialog {
     CardDAO cardDAO = new CardDAO();
     MainJFrame main = new MainJFrame();
     Object[] cardNames = {"Agribank", "Sacombank", "Techcombank", "MBBank"};
-    Tri_JFrame mainJFrame;
+    MainJFrame mainJFrame;
 
     /**
      * Creates new form addCardJDialog
      */
-    public addCardJDialog(Tri_JFrame parent, boolean modal) {
+    public addCardJDialog(MainJFrame parent, boolean modal) {
         super(parent, modal);
         mainJFrame = parent;
         initComponents();
@@ -235,7 +235,7 @@ public class addCardJDialog extends javax.swing.JDialog {
         /* Create and display the dialog */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                addCardJDialog dialog = new addCardJDialog(new Tri_JFrame(), true);
+                addCardJDialog dialog = new addCardJDialog(new MainJFrame(), true);
                 dialog.addWindowListener(new java.awt.event.WindowAdapter() {
                     @Override
                     public void windowClosing(java.awt.event.WindowEvent e) {

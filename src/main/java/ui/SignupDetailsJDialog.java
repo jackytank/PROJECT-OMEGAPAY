@@ -6,6 +6,14 @@
 package ui;
 
 import com.formdev.flatlaf.FlatLightLaf;
+import dao.UserDetailDAO;
+import entity.User_Detail;
+import helper.ImageHelper;
+import helper.MsgHelper;
+import java.io.File;
+import java.util.Date;
+import javax.swing.ImageIcon;
+import javax.swing.JFileChooser;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
@@ -14,14 +22,66 @@ import javax.swing.UnsupportedLookAndFeelException;
  * @author balis
  */
 public class SignupDetailsJDialog extends javax.swing.JDialog {
+    
+    UserDetailDAO userDetailDAO = new UserDetailDAO();
+    static String omegaAccount;
 
     /**
      * Creates new form SignupDetailsJDialog
      */
-    public SignupDetailsJDialog(java.awt.Frame parent, boolean modal) {
+    // Truyen tham so omegaAccount de tiep tuc insert UserDetail
+    public SignupDetailsJDialog(javax.swing.JFrame parent, boolean modal, String omegaAccount) {
         super(parent, modal);
+        this.omegaAccount = omegaAccount;
         initComponents();
-        setLocationRelativeTo(null);
+        setLocationRelativeTo(parent);
+    }
+    
+    private void insert() {
+        User_Detail entity = getUserDetailForm();
+        userDetailDAO.insert(entity);
+        MsgHelper.alert(this, "Insert successfully!");
+        this.dispose();
+        new LoginJFrame().setVisible(true);
+    }
+    
+    private void isSignupFormValid() {
+        
+    }
+    
+    private User_Detail getUserDetailForm() {
+        User_Detail userDetail = new User_Detail();
+        userDetail.setOmegaAccount(omegaAccount);
+        userDetail.setFirstName(txtFirstname.getText());
+        userDetail.setLastName(txtLastname.getText());
+        userDetail.setEmail(txtEmail.getText());
+        userDetail.setAddress(txtAddress.getText());
+        userDetail.setBirthday(txtBirthday.getDate());
+        userDetail.setDayCreated(new Date());
+        userDetail.setPhone(txtPhone.getText());
+        userDetail.setGender(rdoMale.isSelected());
+        // cho mac dinh status rank la Silver, neu tk >50tr thi Gold, >100tr thi Platinum 
+        userDetail.setStatus("Silver");
+        // Cho so du tai khoan mac dich la 5.000.000 VND
+        userDetail.setOmegaBalance(5000000F);
+        // lay ten anh luu tam o toolTipText
+        userDetail.setPhoto(lblPhoto.getToolTipText());
+        return userDetail;
+    }
+    
+    private void choosePhoto() {
+        JFileChooser chooser = new JFileChooser(System.getProperty("user.home") + "/Desktop");
+        if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            File file = chooser.getSelectedFile();
+            ImageHelper.saveFile(file);
+            ImageIcon icon = ImageHelper.readFile(file.getName(), lblPhoto);
+            lblPhoto.setToolTipText(file.getName());
+            lblPhoto.setIcon(icon);
+        }
+    }
+    
+    private void openMain() {
+        new MainJFrame().setVisible(true);
     }
 
     /**
@@ -33,26 +93,30 @@ public class SignupDetailsJDialog extends javax.swing.JDialog {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        genderGroup = new javax.swing.ButtonGroup();
         pnlMain = new javax.swing.JPanel();
         pnlUp = new javax.swing.JPanel();
         lblPersonalDetailTitle = new javax.swing.JLabel();
         pnlDown = new javax.swing.JPanel();
-        jLabel28 = new javax.swing.JLabel();
-        jButton1 = new javax.swing.JButton();
-        jTextField15 = new javax.swing.JTextField();
-        jLabel29 = new javax.swing.JLabel();
-        jLabel30 = new javax.swing.JLabel();
-        jTextField6 = new javax.swing.JTextField();
-        jLabel31 = new javax.swing.JLabel();
-        jTextField7 = new javax.swing.JTextField();
-        jTextField8 = new javax.swing.JTextField();
-        jLabel32 = new javax.swing.JLabel();
-        jDateChooser1 = new com.toedter.calendar.JDateChooser();
-        jLabel39 = new javax.swing.JLabel();
-        jRadioButton1 = new javax.swing.JRadioButton();
-        jRadioButton2 = new javax.swing.JRadioButton();
-        jLabel37 = new javax.swing.JLabel();
-        jButton5 = new javax.swing.JButton();
+        lblPhoto = new javax.swing.JLabel();
+        btnBrowse = new javax.swing.JButton();
+        txtFirstname = new javax.swing.JTextField();
+        lblFirstname = new javax.swing.JLabel();
+        lblLastname = new javax.swing.JLabel();
+        txtLastname = new javax.swing.JTextField();
+        lblAddress = new javax.swing.JLabel();
+        txtEmail = new javax.swing.JTextField();
+        txtPhone = new javax.swing.JTextField();
+        lblPhone = new javax.swing.JLabel();
+        txtBirthday = new com.toedter.calendar.JDateChooser();
+        lblBirthday = new javax.swing.JLabel();
+        rdoMale = new javax.swing.JRadioButton();
+        rdoFemale = new javax.swing.JRadioButton();
+        lblGender = new javax.swing.JLabel();
+        btnNext = new javax.swing.JButton();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        txtAddress = new javax.swing.JTextArea();
+        lblEmail = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
@@ -89,56 +153,82 @@ public class SignupDetailsJDialog extends javax.swing.JDialog {
         pnlDown.setBackground(new java.awt.Color(255, 255, 255));
         pnlDown.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
-        jLabel28.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel28.setIcon(new javax.swing.ImageIcon(getClass().getResource("/photo/elonmusk.png"))); // NOI18N
-        pnlDown.add(jLabel28, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 80, 126, -1));
+        lblPhoto.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        lblPhoto.setIcon(new javax.swing.ImageIcon(getClass().getResource("/photo/elonmusk.png"))); // NOI18N
+        lblPhoto.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                lblPhotoMouseClicked(evt);
+            }
+        });
+        pnlDown.add(lblPhoto, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 80, 126, -1));
 
-        jButton1.setText("Browse");
-        pnlDown.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, 250, -1, -1));
+        btnBrowse.setText("Browse");
+        btnBrowse.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnBrowseActionPerformed(evt);
+            }
+        });
+        pnlDown.add(btnBrowse, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, 250, -1, -1));
 
-        jTextField15.setText("Tri");
-        pnlDown.add(jTextField15, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 100, 227, -1));
+        txtFirstname.setText("Tri");
+        pnlDown.add(txtFirstname, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 100, 227, -1));
 
-        jLabel29.setText("First name");
-        pnlDown.add(jLabel29, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 70, 71, -1));
+        lblFirstname.setText("First name");
+        pnlDown.add(lblFirstname, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 70, 71, -1));
 
-        jLabel30.setText("Last name");
-        pnlDown.add(jLabel30, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 140, 71, -1));
+        lblLastname.setText("Last name");
+        pnlDown.add(lblLastname, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 140, 71, -1));
 
-        jTextField6.setText("To Minh");
-        pnlDown.add(jTextField6, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 160, 227, -1));
+        txtLastname.setText("To Minh");
+        pnlDown.add(txtLastname, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 160, 227, -1));
 
-        jLabel31.setText("Email");
-        pnlDown.add(jLabel31, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 200, 71, -1));
+        lblAddress.setText("Address");
+        pnlDown.add(lblAddress, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 260, 71, -1));
 
-        jTextField7.setText("abc@gmail.com");
-        pnlDown.add(jTextField7, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 220, 227, -1));
+        txtEmail.setText("abc@gmail.com");
+        pnlDown.add(txtEmail, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 220, 227, -1));
 
-        jTextField8.setText("0844993847");
-        pnlDown.add(jTextField8, new org.netbeans.lib.awtextra.AbsoluteConstraints(488, 157, 230, -1));
+        txtPhone.setText("0844993847");
+        pnlDown.add(txtPhone, new org.netbeans.lib.awtextra.AbsoluteConstraints(488, 157, 230, -1));
 
-        jLabel32.setText("Phone");
-        pnlDown.add(jLabel32, new org.netbeans.lib.awtextra.AbsoluteConstraints(488, 135, 71, -1));
-        pnlDown.add(jDateChooser1, new org.netbeans.lib.awtextra.AbsoluteConstraints(490, 220, 230, -1));
+        lblPhone.setText("Phone");
+        pnlDown.add(lblPhone, new org.netbeans.lib.awtextra.AbsoluteConstraints(488, 135, 71, -1));
+        pnlDown.add(txtBirthday, new org.netbeans.lib.awtextra.AbsoluteConstraints(490, 220, 230, -1));
 
-        jLabel39.setText("Birthday");
-        pnlDown.add(jLabel39, new org.netbeans.lib.awtextra.AbsoluteConstraints(490, 200, 71, -1));
+        lblBirthday.setText("Birthday");
+        pnlDown.add(lblBirthday, new org.netbeans.lib.awtextra.AbsoluteConstraints(490, 200, 71, -1));
 
-        jRadioButton1.setSelected(true);
-        jRadioButton1.setText("Male");
-        pnlDown.add(jRadioButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(490, 100, -1, -1));
+        genderGroup.add(rdoMale);
+        rdoMale.setSelected(true);
+        rdoMale.setText("Male");
+        pnlDown.add(rdoMale, new org.netbeans.lib.awtextra.AbsoluteConstraints(490, 100, -1, -1));
 
-        jRadioButton2.setText("Female");
-        pnlDown.add(jRadioButton2, new org.netbeans.lib.awtextra.AbsoluteConstraints(610, 100, -1, -1));
+        genderGroup.add(rdoFemale);
+        rdoFemale.setText("Female");
+        pnlDown.add(rdoFemale, new org.netbeans.lib.awtextra.AbsoluteConstraints(610, 100, -1, -1));
 
-        jLabel37.setText("Gender");
-        pnlDown.add(jLabel37, new org.netbeans.lib.awtextra.AbsoluteConstraints(490, 80, 71, -1));
+        lblGender.setText("Gender");
+        pnlDown.add(lblGender, new org.netbeans.lib.awtextra.AbsoluteConstraints(490, 80, 71, -1));
 
-        jButton5.setBackground(new java.awt.Color(238, 0, 51));
-        jButton5.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
-        jButton5.setForeground(new java.awt.Color(255, 255, 255));
-        jButton5.setText("NEXT ->>");
-        pnlDown.add(jButton5, new org.netbeans.lib.awtextra.AbsoluteConstraints(570, 330, 150, -1));
+        btnNext.setBackground(new java.awt.Color(238, 0, 51));
+        btnNext.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        btnNext.setForeground(new java.awt.Color(255, 255, 255));
+        btnNext.setText("FINISH");
+        btnNext.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnNextActionPerformed(evt);
+            }
+        });
+        pnlDown.add(btnNext, new org.netbeans.lib.awtextra.AbsoluteConstraints(570, 400, 150, -1));
+
+        txtAddress.setColumns(20);
+        txtAddress.setRows(5);
+        jScrollPane1.setViewportView(txtAddress);
+
+        pnlDown.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 280, 540, 80));
+
+        lblEmail.setText("Email");
+        pnlDown.add(lblEmail, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 200, 71, -1));
 
         javax.swing.GroupLayout pnlMainLayout = new javax.swing.GroupLayout(pnlMain);
         pnlMain.setLayout(pnlMainLayout);
@@ -151,9 +241,8 @@ public class SignupDetailsJDialog extends javax.swing.JDialog {
             pnlMainLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(pnlMainLayout.createSequentialGroup()
                 .addComponent(pnlUp, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(pnlDown, javax.swing.GroupLayout.PREFERRED_SIZE, 371, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(47, 47, 47))
+                .addGap(0, 0, 0)
+                .addComponent(pnlDown, javax.swing.GroupLayout.DEFAULT_SIZE, 448, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -164,11 +253,23 @@ public class SignupDetailsJDialog extends javax.swing.JDialog {
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(pnlMain, javax.swing.GroupLayout.PREFERRED_SIZE, 424, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addComponent(pnlMain, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
+
+    private void lblPhotoMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_lblPhotoMouseClicked
+        choosePhoto();
+    }//GEN-LAST:event_lblPhotoMouseClicked
+
+    private void btnBrowseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnBrowseActionPerformed
+        choosePhoto();
+    }//GEN-LAST:event_btnBrowseActionPerformed
+
+    private void btnNextActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnNextActionPerformed
+        insert();
+    }//GEN-LAST:event_btnNextActionPerformed
 
     /**
      * @param args the command line arguments
@@ -205,7 +306,7 @@ public class SignupDetailsJDialog extends javax.swing.JDialog {
         /* Create and display the dialog */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                SignupDetailsJDialog dialog = new SignupDetailsJDialog(new javax.swing.JFrame(), true);
+                SignupDetailsJDialog dialog = new SignupDetailsJDialog(new javax.swing.JFrame(), true, omegaAccount);
                 dialog.addWindowListener(new java.awt.event.WindowAdapter() {
                     @Override
                     public void windowClosing(java.awt.event.WindowEvent e) {
@@ -218,25 +319,29 @@ public class SignupDetailsJDialog extends javax.swing.JDialog {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton jButton1;
-    private javax.swing.JButton jButton5;
-    private com.toedter.calendar.JDateChooser jDateChooser1;
-    private javax.swing.JLabel jLabel28;
-    private javax.swing.JLabel jLabel29;
-    private javax.swing.JLabel jLabel30;
-    private javax.swing.JLabel jLabel31;
-    private javax.swing.JLabel jLabel32;
-    private javax.swing.JLabel jLabel37;
-    private javax.swing.JLabel jLabel39;
-    private javax.swing.JRadioButton jRadioButton1;
-    private javax.swing.JRadioButton jRadioButton2;
-    private javax.swing.JTextField jTextField15;
-    private javax.swing.JTextField jTextField6;
-    private javax.swing.JTextField jTextField7;
-    private javax.swing.JTextField jTextField8;
+    private javax.swing.JButton btnBrowse;
+    private javax.swing.JButton btnNext;
+    private javax.swing.ButtonGroup genderGroup;
+    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JLabel lblAddress;
+    private javax.swing.JLabel lblBirthday;
+    private javax.swing.JLabel lblEmail;
+    private javax.swing.JLabel lblFirstname;
+    private javax.swing.JLabel lblGender;
+    private javax.swing.JLabel lblLastname;
     private javax.swing.JLabel lblPersonalDetailTitle;
+    private javax.swing.JLabel lblPhone;
+    private javax.swing.JLabel lblPhoto;
     private javax.swing.JPanel pnlDown;
     private javax.swing.JPanel pnlMain;
     private javax.swing.JPanel pnlUp;
+    private javax.swing.JRadioButton rdoFemale;
+    private javax.swing.JRadioButton rdoMale;
+    private javax.swing.JTextArea txtAddress;
+    private com.toedter.calendar.JDateChooser txtBirthday;
+    private javax.swing.JTextField txtEmail;
+    private javax.swing.JTextField txtFirstname;
+    private javax.swing.JTextField txtLastname;
+    private javax.swing.JTextField txtPhone;
     // End of variables declaration//GEN-END:variables
 }

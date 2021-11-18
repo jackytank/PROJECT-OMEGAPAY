@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import javax.swing.ImageIcon;
+import javax.swing.JLabel;
 
 /**
  *
@@ -33,9 +34,9 @@ public class ImageHelper {
             throw new RuntimeException(e);
         }
     }
-
-    public static ImageIcon readFile(String filename) {
+    
+    public static ImageIcon readFile(String filename, JLabel label) {
         File path = new File("photo", filename);
-        return new ImageIcon(new ImageIcon(path.getAbsolutePath()).getImage().getScaledInstance(180, 180, Image.SCALE_SMOOTH));
+        return new ImageIcon(new ImageIcon(path.getAbsolutePath()).getImage().getScaledInstance(label.getWidth(), label.getHeight(), Image.SCALE_SMOOTH));
     }
 }

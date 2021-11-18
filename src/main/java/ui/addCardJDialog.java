@@ -47,12 +47,28 @@ public class addCardJDialog extends javax.swing.JDialog {
 
     private void insertCard() {
         Card card = getCardForm();
-        try {
-            cardDAO.insert(card);
-            mainJFrame.fillCardTable();
-            MsgHelper.alert(this, "Add card successfully!");
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        String cardNumber = txtCardNumber.getText();
+        String cardHolder = txtCardHolderName.getText();
+        String PIN = new String(txtPIN.getPassword());
+        String billingAddress = txtBillingAddress.getText();
+        if (cardNumber.length() != 16) {
+            MsgHelper.alert(this, "Card number must have length of 16!");
+        } else if (cardHolder.length() == 0) {
+            MsgHelper.alert(this, "Card holder name must not be empty!");
+        } else if (PIN.length() != 6) {
+            MsgHelper.alert(this, "PIN must have length of 6!");
+        } else if (billingAddress.length() == 0) {
+            MsgHelper.alert(this, "Billing address must not be empty!");
+        } else if (txtExpirationDate.getDate() == null) {
+            MsgHelper.alert(this, "Expiration date must not be empty!");
+        } else {
+            try {
+                cardDAO.insert(card);
+                mainJFrame.fillCardTable();
+                MsgHelper.alert(this, "Add card successfully!");
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -65,7 +81,8 @@ public class addCardJDialog extends javax.swing.JDialog {
         card.setExpirationDate(txtExpirationDate.getDate());
         card.setOmegaAccount(AuthUser.user.getOmegaAccount());
         card.setBillingAddress(txtBillingAddress.getText());
-        card.setCardBalance(10000000);
+        // cho so du tai khoan card mac dinh la 100.000.000 VND
+        card.setCardBalance(100000000);
         return card;
     }
 

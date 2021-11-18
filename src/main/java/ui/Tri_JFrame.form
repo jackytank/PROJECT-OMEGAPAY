@@ -864,7 +864,7 @@
                             </Constraint>
                           </Constraints>
                         </Component>
-                        <Component class="javax.swing.JLabel" name="jLabel26">
+                        <Component class="javax.swing.JLabel" name="lblCurrentOmegaBalance">
                           <Properties>
                             <Property name="foreground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
                               <Color blue="33" green="ff" red="33" type="rgb"/>
@@ -1419,8 +1419,8 @@
                                               <EmptySpace min="-2" pref="109" max="-2" attributes="0"/>
                                               <Component id="lblCardOrder1" min="-2" pref="48" max="-2" attributes="0"/>
                                               <EmptySpace max="-2" attributes="0"/>
-                                              <Component id="lblCardID" min="-2" pref="30" max="-2" attributes="0"/>
-                                              <EmptySpace min="-2" pref="139" max="-2" attributes="0"/>
+                                              <Component id="lblCardID" min="-2" pref="98" max="-2" attributes="0"/>
+                                              <EmptySpace min="-2" pref="71" max="-2" attributes="0"/>
                                               <Group type="103" groupAlignment="0" attributes="0">
                                                   <Group type="102" alignment="0" attributes="0">
                                                       <Group type="103" groupAlignment="0" attributes="0">
@@ -1780,7 +1780,7 @@
                                 <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                                   <Font name="Credit Card" size="14" style="2"/>
                                 </Property>
-                                <Property name="horizontalAlignment" type="int" value="0"/>
+                                <Property name="horizontalAlignment" type="int" value="2"/>
                                 <Property name="text" type="java.lang.String" value="1"/>
                               </Properties>
                             </Component>

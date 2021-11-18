@@ -8,8 +8,10 @@ package ui;
 import com.formdev.flatlaf.FlatLightLaf;
 import dao.CardDAO;
 import dao.TransactionDAO;
+import dao.UserDetailDAO;
 import entity.Card;
 import entity.Transaction;
+import entity.User_Detail;
 import helper.AuthUser;
 import helper.DateHelper;
 import helper.MsgHelper;
@@ -32,19 +34,21 @@ public class Tri_JFrame extends javax.swing.JFrame {
 
     CardDAO cardDAO = new CardDAO();
     TransactionDAO transDAO = new TransactionDAO();
+    UserDetailDAO detailDAO = new UserDetailDAO();
+
     Object[] cardNames = {"Agribank", "Sacombank", "Techcombank", "MBBank"};
     int cardTableRow = -1;
 
     /**
      * Creates new form NewJFrame
      */
-    public Tri_JFrame() {
-        initComponents();
-    }
 
     private void initCard() {
-        fillCardComboBox();
-        fillCardTable();
+        initComponents();
+        setLocationRelativeTo(null);
+        initCard();
+        initTransfer();
+        setTitle("OMEGAPAY");
     }
 
     private void openAddCardDialog() {
@@ -99,9 +103,11 @@ public class Tri_JFrame extends javax.swing.JFrame {
 
         try {
             List<Card> list = cardDAO.selectByOmegaAccount(AuthUser.user.getOmegaAccount());
-            for (Card c : list) {
-                Object[] row = {c.getCardID(), c.getCardNumber(), String.format("%,.0f", c.getCardBalance()) + " VND", c.getCardName()};
-                model.addRow(row);
+            if (list != null) {
+                for (Card c : list) {
+                    Object[] row = {c.getCardID(), c.getCardNumber(), String.format("%,.0f", c.getCardBalance()) + " VND", c.getCardName()};
+                    model.addRow(row);
+                }
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -175,19 +181,50 @@ public class Tri_JFrame extends javax.swing.JFrame {
     }
 
     //-------------- TransferSection ------------
+    private void initTransfer() {
+        User_Detail userDetail = detailDAO.selectByID(AuthUser.user.getOmegaAccount());
+        lblCurrentOmegaBalance.setText(String.format("%,.0f", userDetail.getOmegaBalance()) + " VND");
+    }
+
     private void transferMoney() {
         Transaction tran = getTransferForm();
+        User_Detail userDetail = detailDAO.selectByID(AuthUser.user.getOmegaAccount());
+        User_Detail checkDestination = detailDAO.selectByID(txtToAccount.getText());
+        Float amount = Float.parseFloat(txtAmount.getText());
+        String toAccount = txtToAccount.getText();
         try {
-            if (txtToAccount.getText().equals(AuthUser.user.getOmegaAccount())) {
+            if (toAccount.equals(AuthUser.user.getOmegaAccount())) {
                 MsgHelper.alert(this, "You can't send money to yourself!");
+            } else if (checkDestination == null) {
+                MsgHelper.alert(this, "Destination account is not exist!");
+            } else if (amount > userDetail.getOmegaBalance()) {
+                MsgHelper.alert(this, "Omega balance is not enough to transfer!");
+            } else if ((toAccount.equals("")) || (amount == 0)) {
+                MsgHelper.alert(this, "Amount and account destination must not be empty!");
             } else {
                 transDAO.insert(tran);
+                updateBalanceAfterTransfer(amount);
+                initTransfer();
                 clearTransferForm();
                 MsgHelper.alert(this, "Transfer successfully!");
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private void updateBalanceAfterTransfer(float amount) {
+        User_Detail fromAccount = detailDAO.selectByID(AuthUser.user.getOmegaAccount());
+        User_Detail toAccount = detailDAO.selectByID(txtToAccount.getText());
+        //save 2 accounts balance to 2 variable
+        float fromBalance = fromAccount.getOmegaBalance();
+        float toBalance = toAccount.getOmegaBalance();
+        //subtract and add amount 
+        fromAccount.setOmegaBalance(fromBalance - amount);
+        toAccount.setOmegaBalance(toBalance + amount);
+        //update to database
+        detailDAO.updateBalance(fromAccount);
+        detailDAO.updateBalance(toAccount);
     }
 
     private void clearTransferForm() {
@@ -265,7 +302,7 @@ public class Tri_JFrame extends javax.swing.JFrame {
         jScrollPane2 = new javax.swing.JScrollPane();
         txtNote = new javax.swing.JTextArea();
         jLabel25 = new javax.swing.JLabel();
-        jLabel26 = new javax.swing.JLabel();
+        lblCurrentOmegaBalance = new javax.swing.JLabel();
         btnTransfer = new javax.swing.JButton();
         pnlAccountSection = new javax.swing.JPanel();
         pnlMain = new javax.swing.JPanel();
@@ -736,10 +773,10 @@ public class Tri_JFrame extends javax.swing.JFrame {
         jLabel25.setText("Current: ");
         pnlOmegapayAcc.add(jLabel25, new org.netbeans.lib.awtextra.AbsoluteConstraints(230, 100, 50, -1));
 
-        jLabel26.setForeground(new java.awt.Color(51, 255, 51));
-        jLabel26.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
-        jLabel26.setText("304.000 VND");
-        pnlOmegapayAcc.add(jLabel26, new org.netbeans.lib.awtextra.AbsoluteConstraints(270, 100, 110, -1));
+        lblCurrentOmegaBalance.setForeground(new java.awt.Color(51, 255, 51));
+        lblCurrentOmegaBalance.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        lblCurrentOmegaBalance.setText("304.000 VND");
+        pnlOmegapayAcc.add(lblCurrentOmegaBalance, new org.netbeans.lib.awtextra.AbsoluteConstraints(270, 100, 110, -1));
 
         tabTransfer.addTab("TO OMEGAPAY ACCOUNT", pnlOmegapayAcc);
 
@@ -1103,7 +1140,7 @@ public class Tri_JFrame extends javax.swing.JFrame {
         jLabel27.setText("Expiration date");
 
         lblCardID.setFont(new java.awt.Font("Credit Card", 2, 14)); // NOI18N
-        lblCardID.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        lblCardID.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         lblCardID.setText("1");
 
         lblCardOrder1.setFont(new java.awt.Font("Courier New", 1, 14)); // NOI18N
@@ -1120,8 +1157,8 @@ public class Tri_JFrame extends javax.swing.JFrame {
                         .addGap(109, 109, 109)
                         .addComponent(lblCardOrder1, javax.swing.GroupLayout.PREFERRED_SIZE, 48, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(lblCardID, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(139, 139, 139)
+                        .addComponent(lblCardID, javax.swing.GroupLayout.PREFERRED_SIZE, 98, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(71, 71, 71)
                         .addGroup(pnlCardDetail1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(pnlCardDetail1Layout.createSequentialGroup()
                                 .addGroup(pnlCardDetail1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -1697,7 +1734,6 @@ public class Tri_JFrame extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel21;
     private javax.swing.JLabel jLabel23;
     private javax.swing.JLabel jLabel25;
-    private javax.swing.JLabel jLabel26;
     private javax.swing.JLabel jLabel27;
     private javax.swing.JLabel jLabel29;
     private javax.swing.JLabel jLabel3;
@@ -1755,6 +1791,7 @@ public class Tri_JFrame extends javax.swing.JFrame {
     private javax.swing.JLabel lblCardSection;
     private javax.swing.JLabel lblCardSection2;
     private javax.swing.JLabel lblCardVietelPay;
+    private javax.swing.JLabel lblCurrentOmegaBalance;
     private javax.swing.JLabel lblLastTransaction;
     private javax.swing.JLabel lblOmegaBalance;
     private javax.swing.JLabel lblOmegaPayTitle;

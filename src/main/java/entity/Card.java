@@ -12,6 +12,7 @@ import java.util.Date;
  * @author dell
  */
 public class Card {
+
     private int cardID;
     private String omegaAccount;
     private String cardNumber;
@@ -108,8 +109,5 @@ public class Card {
     public void setCardName(String cardName) {
         this.cardName = cardName;
     }
-    
-    
-    
-    
+
 }

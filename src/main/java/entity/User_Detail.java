@@ -12,18 +12,19 @@ import java.util.Date;
  * @author dell
  */
 public class User_Detail {
-   private String omegaAccount;
-   private String firstName;
-   private String lastName;
-   private String email;
-   private String phone;
-   private boolean gender;
-   private Date birthday;
-   private String address;
-   private Date dayCreated;
-   private String status;
-   private String photo;
-   private float omegaBalance;
+
+    private String omegaAccount;
+    private String firstName;
+    private String lastName;
+    private String email;
+    private String phone;
+    private boolean gender;
+    private Date birthday;
+    private String address;
+    private Date dayCreated;
+    private String status;
+    private String photo;
+    private float omegaBalance;
 
     public User_Detail() {
     }
@@ -138,5 +139,5 @@ public class User_Detail {
     public void setOmegaBalance(float omegaBalance) {
         this.omegaBalance = omegaBalance;
     }
-    
+
 }

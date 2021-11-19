@@ -20,7 +20,10 @@ public class UserDetailDAO extends OmegaPayDAO<User_Detail, String> {
 
     String INSERT_SQL = "INSERT INTO User_Detail(OmegaAccount, FirstName, LastName, Email, "
             + "Phone, Gender, Birthday, Address, DayCreated, Status, Photo, OmegaBalance) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)";
+    String UPDATE_SQL = "UPDATE User_Detail SET FirstName=?, LastName=?, Email=?, Phone=?, Gender=?, Birthday=?,"
+            + " Address=?, DayCreated=?, Status=?, Photo=?, OmegaBalance=? WHERE OmegaAccount=?";
     String UPDATE_BALANCE_SQL = "UPDATE User_Detail SET OmegaBalance=? WHERE OmegaAccount=?";
+    String DELETE_SQL = "DELETE FROM User_Detail WHERE OmegaAccount=?";
     String SELECT_ALL = "SELECT * FROM User_Detail";
     String SELECT_BY_OMEGA = "SELECT * FROM User_Detail WHERE OmegaAccount=?";
 
@@ -43,7 +46,20 @@ public class UserDetailDAO extends OmegaPayDAO<User_Detail, String> {
 
     @Override
     public void update(User_Detail entity) {
-
+        JDBCHelper.executeUpdate(UPDATE_SQL,
+                entity.getFirstName(),
+                entity.getLastName(),
+                entity.getEmail(),
+                entity.getPhone(),
+                entity.getGender(),
+                entity.getBirthday(),
+                entity.getAddress(),
+                entity.getDayCreated(),
+                entity.getStatus(),
+                entity.getPhoto(),
+                entity.getOmegaBalance(),
+                entity.getOmegaAccount()
+        );
     }
 
     public void updateBalance(User_Detail entity) {
@@ -54,16 +70,13 @@ public class UserDetailDAO extends OmegaPayDAO<User_Detail, String> {
 
     @Override
     public void delete(String id) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        JDBCHelper.executeUpdate(DELETE_SQL, id);
     }
 
     @Override
     public User_Detail selectByID(String omegaAccount) {
         List<User_Detail> list = this.selectBySQL(SELECT_BY_OMEGA, omegaAccount);
-        if (list.isEmpty()) {
-            return null;
-        }
-        return list.get(0);
+        return list.isEmpty() ? null : list.get(0);
     }
 
     @Override

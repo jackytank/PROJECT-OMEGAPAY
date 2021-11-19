@@ -14,12 +14,16 @@ import entity.Transaction;
 import entity.User_Detail;
 import helper.AuthUser;
 import helper.DateHelper;
+import helper.ImageHelper;
 import helper.MsgHelper;
 import java.awt.Color;
+import java.io.File;
 import java.util.Date;
 import java.util.List;
 import javax.swing.DefaultComboBoxModel;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.UIManager;
@@ -30,7 +34,7 @@ import javax.swing.table.DefaultTableModel;
  *
  * @author balis
  */
-public class Tri_JFrame extends javax.swing.JFrame {
+public class Tri_An_JFrame extends javax.swing.JFrame {
 
     CardDAO cardDAO = new CardDAO();
     TransactionDAO transDAO = new TransactionDAO();
@@ -40,15 +44,22 @@ public class Tri_JFrame extends javax.swing.JFrame {
     int cardTableRow = -1;
 
     /**
-     * Creates new form NewJFrame
+     * Creates new form MainJFrame
      */
-
-    private void initCard() {
+    public Tri_An_JFrame() {
         initComponents();
         setLocationRelativeTo(null);
-        initCard();
         initTransfer();
+        initAccount();
+        initCard();
         setTitle("OMEGAPAY");
+    }
+    //-------------------------- Card Section ---------------------------
+
+    private void initCard() {
+        fillCardComboBox();
+        fillCardTable();
+        clearCardForm();
     }
 
     private void openAddCardDialog() {
@@ -180,7 +191,7 @@ public class Tri_JFrame extends javax.swing.JFrame {
         }
     }
 
-    //-------------- TransferSection ------------
+    //-------------------------- TransferSection ---------------------------
     private void initTransfer() {
         User_Detail userDetail = detailDAO.selectByID(AuthUser.user.getOmegaAccount());
         lblCurrentOmegaBalance.setText(String.format("%,.0f", userDetail.getOmegaBalance()) + " VND");
@@ -241,6 +252,103 @@ public class Tri_JFrame extends javax.swing.JFrame {
         tran.setAmount(Float.parseFloat(txtAmount.getText()));
         tran.setNote(txtNote.getText());
         return tran;
+    }
+
+    //-------------------------- Account Section ---------------------------
+    private void initAccount() {
+        User_Detail user_Detail = detailDAO.selectByID(AuthUser.user.getOmegaAccount());
+        this.defaultEditable();
+        this.setAccountForm(user_Detail);
+    }
+
+    private void choosePhoto() {
+        JFileChooser fileChooser = new JFileChooser(System.getProperty("user.home") + "/Desktop");
+        if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            File file = fileChooser.getSelectedFile();
+            ImageHelper.saveFile(file);
+            ImageIcon icon = ImageHelper.readFile(file.getName(), lblPhoto);
+            lblPhoto.setIcon(icon);
+            lblPhoto.setToolTipText(file.getName());
+        }
+    }
+
+    private void updateUserDetail() {
+        User_Detail entity = getAccountForm();
+        try {
+            detailDAO.update(entity);
+            initAccount();
+            MsgHelper.alert(this, "Update successfully!");
+        } catch (Exception e) {
+            MsgHelper.alert(this, "Update failed!");
+        }
+    }
+
+    private void setAccountForm(User_Detail e) {
+        txtOmegaAccount.setText(e.getOmegaAccount());
+        txtFirstname.setText(e.getFirstName());
+        txtLastname.setText(e.getLastName());
+        txtEmail.setText(e.getEmail());
+        txtPhone.setText(e.getPhone());
+        rdoMale.setSelected(e.getGender());
+        rdoFemale.setSelected(!e.getGender());
+        txtBirthday.setDate(e.getBirthday());
+        txtAddress.setText(e.getAddress());
+        txtDayCreated.setText(DateHelper.toString(e.getDayCreated(), "dd-MM-yyyy"));
+        txtStatus.setText(e.getStatus());
+        if (e.getPhoto() != null) {
+            lblPhoto.setToolTipText(e.getPhoto());
+            lblPhoto.setIcon(ImageHelper.readFile(e.getPhoto(), lblPhoto));
+        }
+        txtOmegaBalance.setText(String.format("%,.0f", e.getOmegaBalance()) + " VND");
+        lblBalance.setToolTipText(String.valueOf(e.getOmegaBalance()));
+    }
+
+    private User_Detail getAccountForm() {
+        User_Detail entity = new User_Detail();
+        entity.setOmegaAccount(txtOmegaAccount.getText());
+        entity.setFirstName(txtFirstname.getText());
+        entity.setLastName(txtLastname.getText());
+        entity.setEmail(txtEmail.getText());
+        entity.setPhone(txtPhone.getText());
+        entity.setGender(rdoMale.isSelected());
+        entity.setBirthday(txtBirthday.getDate());
+        entity.setAddress(txtAddress.getText());
+        entity.setDayCreated(DateHelper.toDate(txtDayCreated.getText(), "dd-MM-yyyy"));
+        entity.setStatus(txtStatus.getText());
+        entity.setPhoto(lblPhoto.getToolTipText());
+        entity.setOmegaBalance(Float.parseFloat(lblBalance.getToolTipText()));
+        return entity;
+    }
+
+    private void defaultEditable() {
+        txtOmegaAccount.setEnabled(false);
+        txtFirstname.setEnabled(false);
+        txtLastname.setEnabled(false);
+        txtAddress.setEnabled(false);
+        txtEmail.setEnabled(false);
+        txtPhone.setEnabled(false);
+        txtBirthday.setEnabled(false);
+        txtOmegaBalance.setEnabled(false);
+        rdoFemale.setEnabled(false);
+        rdoMale.setEnabled(false);
+        txtDayCreated.setEnabled(false);
+        txtStatus.setEnabled(false);
+    }
+
+    private void updateEditable() {
+        //Can edit all except OmegaAccount, OmegaBalance, DayCreated and Status
+        txtOmegaAccount.setEnabled(false);
+        txtFirstname.setEnabled(true);
+        txtLastname.setEnabled(true);
+        txtAddress.setEnabled(true);
+        txtEmail.setEnabled(true);
+        txtPhone.setEnabled(true);
+        txtBirthday.setEnabled(true);
+        txtOmegaBalance.setEnabled(false);
+        rdoFemale.setEnabled(true);
+        rdoMale.setEnabled(true);
+        txtDayCreated.setEnabled(false);
+        txtStatus.setEnabled(false);
     }
 
     /**
@@ -327,7 +435,7 @@ public class Tri_JFrame extends javax.swing.JFrame {
         txtStatus = new javax.swing.JTextField();
         txtFirstname = new javax.swing.JTextField();
         jLabel39 = new javax.swing.JLabel();
-        jLabel40 = new javax.swing.JLabel();
+        lblBalance = new javax.swing.JLabel();
         txtOmegaBalance = new javax.swing.JTextField();
         rdoMale = new javax.swing.JRadioButton();
         rdoFemale = new javax.swing.JRadioButton();
@@ -854,7 +962,7 @@ public class Tri_JFrame extends javax.swing.JFrame {
 
         jLabel39.setText("Birthday");
 
-        jLabel40.setText("Omega Balance");
+        lblBalance.setText("Omega Balance");
 
         txtOmegaBalance.setText("304.000 VND");
 
@@ -920,7 +1028,7 @@ public class Tri_JFrame extends javax.swing.JFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(txtDayCreated, javax.swing.GroupLayout.PREFERRED_SIZE, 150, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(pnlMainLayout.createSequentialGroup()
-                        .addComponent(jLabel40, javax.swing.GroupLayout.PREFERRED_SIZE, 89, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(lblBalance, javax.swing.GroupLayout.PREFERRED_SIZE, 89, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(18, 18, 18)
                         .addComponent(txtOmegaBalance)))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
@@ -973,7 +1081,7 @@ public class Tri_JFrame extends javax.swing.JFrame {
                                     .addComponent(txtStatus, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                                 .addGap(18, 18, 18)
                                 .addGroup(pnlMainLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                    .addComponent(jLabel40)
+                                    .addComponent(lblBalance)
                                     .addComponent(txtOmegaBalance, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
                         .addGap(21, 21, 21)
                         .addComponent(jLabel39))
@@ -982,11 +1090,26 @@ public class Tri_JFrame extends javax.swing.JFrame {
         );
 
         btnUpdate.setText("UPDATE");
+        btnUpdate.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnUpdateActionPerformed(evt);
+            }
+        });
 
         btnEdit.setText("Edit");
+        btnEdit.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnEditActionPerformed(evt);
+            }
+        });
 
         lblPhoto.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         lblPhoto.setIcon(new javax.swing.ImageIcon(getClass().getResource("/photo/elonmusk.png"))); // NOI18N
+        lblPhoto.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                lblPhotoMouseClicked(evt);
+            }
+        });
 
         javax.swing.GroupLayout pnlAccountSectionLayout = new javax.swing.GroupLayout(pnlAccountSection);
         pnlAccountSection.setLayout(pnlAccountSectionLayout);
@@ -1625,6 +1748,18 @@ public class Tri_JFrame extends javax.swing.JFrame {
         transferMoney();
     }//GEN-LAST:event_btnTransferActionPerformed
 
+    private void btnUpdateActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnUpdateActionPerformed
+        updateUserDetail();
+    }//GEN-LAST:event_btnUpdateActionPerformed
+
+    private void btnEditActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEditActionPerformed
+        updateEditable();
+    }//GEN-LAST:event_btnEditActionPerformed
+
+    private void lblPhotoMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_lblPhotoMouseClicked
+        choosePhoto();
+    }//GEN-LAST:event_lblPhotoMouseClicked
+
     private void cboCardNamesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cboCardNamesActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_cboCardNamesActionPerformed
@@ -1689,13 +1824,13 @@ public class Tri_JFrame extends javax.swing.JFrame {
                 }
             }
         } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(Tri_JFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(Tri_An_JFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(Tri_JFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(Tri_An_JFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(Tri_JFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(Tri_An_JFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(Tri_JFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(Tri_An_JFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
         //</editor-fold>
         FlatLightLaf.setup();
@@ -1707,7 +1842,7 @@ public class Tri_JFrame extends javax.swing.JFrame {
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                new Tri_JFrame().setVisible(true);
+                new Tri_An_JFrame().setVisible(true);
             }
         });
     }
@@ -1747,7 +1882,6 @@ public class Tri_JFrame extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel38;
     private javax.swing.JLabel jLabel39;
     private javax.swing.JLabel jLabel4;
-    private javax.swing.JLabel jLabel40;
     private javax.swing.JLabel jLabel41;
     private javax.swing.JLabel jLabel42;
     private javax.swing.JLabel jLabel44;
@@ -1780,6 +1914,7 @@ public class Tri_JFrame extends javax.swing.JFrame {
     private javax.swing.JLabel lblAccountInfoTitle;
     private javax.swing.JLabel lblAddMoney;
     private javax.swing.JLabel lblAddNew;
+    private javax.swing.JLabel lblBalance;
     private javax.swing.JLabel lblCVVNum;
     private javax.swing.JLabel lblCVVTitle;
     private javax.swing.JLabel lblCVVTitle1;

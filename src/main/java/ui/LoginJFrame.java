@@ -149,7 +149,7 @@ public class LoginJFrame extends javax.swing.JFrame {
         });
         pnlSigninSection.add(txtUserSignin, new org.netbeans.lib.awtextra.AbsoluteConstraints(144, 256, 326, 36));
 
-        txtPassSignin.setText("123456");
+        txtPassSignin.setText("12345678");
         txtPassSignin.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyPressed(java.awt.event.KeyEvent evt) {
                 txtPassSigninKeyPressed(evt);

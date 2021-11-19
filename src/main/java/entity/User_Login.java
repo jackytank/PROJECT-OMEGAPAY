@@ -10,6 +10,7 @@ package entity;
  * @author dell
  */
 public class User_Login {
+
     private String omegaAccount;
     private String username;
     private String password;
@@ -46,6 +47,5 @@ public class User_Login {
     public void setPassword(String password) {
         this.password = password;
     }
-    
-    
+
 }

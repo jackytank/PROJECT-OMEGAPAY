@@ -12,6 +12,7 @@ import java.util.Date;
  * @author dell
  */
 public class Transaction {
+
     private int transactionID;
     private Date transactionDate;
     private String fromAccount;
@@ -78,5 +79,5 @@ public class Transaction {
     public void setNote(String note) {
         this.note = note;
     }
-    
+
 }

@@ -1046,7 +1046,7 @@
                                       <Component id="txtDayCreated" min="-2" pref="150" max="-2" attributes="0"/>
                                   </Group>
                                   <Group type="102" alignment="0" attributes="0">
-                                      <Component id="jLabel40" min="-2" pref="89" max="-2" attributes="0"/>
+                                      <Component id="lblBalance" min="-2" pref="89" max="-2" attributes="0"/>
                                       <EmptySpace type="separate" max="-2" attributes="0"/>
                                       <Component id="txtOmegaBalance" max="32767" attributes="0"/>
                                   </Group>
@@ -1113,7 +1113,7 @@
                                               </Group>
                                               <EmptySpace type="separate" max="-2" attributes="0"/>
                                               <Group type="103" groupAlignment="3" attributes="0">
-                                                  <Component id="jLabel40" alignment="3" min="-2" max="-2" attributes="0"/>
+                                                  <Component id="lblBalance" alignment="3" min="-2" max="-2" attributes="0"/>
                                                   <Component id="txtOmegaBalance" alignment="3" min="-2" max="-2" attributes="0"/>
                                               </Group>
                                           </Group>
@@ -1251,7 +1251,7 @@
                         <Property name="text" type="java.lang.String" value="Birthday"/>
                       </Properties>
                     </Component>
-                    <Component class="javax.swing.JLabel" name="jLabel40">
+                    <Component class="javax.swing.JLabel" name="lblBalance">
                       <Properties>
                         <Property name="text" type="java.lang.String" value="Omega Balance"/>
                       </Properties>
@@ -1280,11 +1280,17 @@
                   <Properties>
                     <Property name="text" type="java.lang.String" value="UPDATE"/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnUpdateActionPerformed"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JButton" name="btnEdit">
                   <Properties>
                     <Property name="text" type="java.lang.String" value="Edit"/>
                   </Properties>
+                  <Events>
+                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnEditActionPerformed"/>
+                  </Events>
                 </Component>
                 <Component class="javax.swing.JLabel" name="lblPhoto">
                   <Properties>
@@ -1293,6 +1299,9 @@
                       <Image iconType="3" name="/photo/elonmusk.png"/>
                     </Property>
                   </Properties>
+                  <Events>
+                    <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="lblPhotoMouseClicked"/>
+                  </Events>
                 </Component>
               </SubComponents>
             </Container>

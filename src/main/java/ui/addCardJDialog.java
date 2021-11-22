@@ -66,6 +66,7 @@ public class addCardJDialog extends javax.swing.JDialog {
                 cardDAO.insert(card);
                 mainJFrame.fillCardTable();
                 MsgHelper.alert(this, "Add card successfully!");
+                this.dispose();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

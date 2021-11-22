@@ -19,8 +19,8 @@ import java.util.List;
 public class TransactionDAO extends OmegaPayDAO<Transaction, Integer> {
 
     String INSERT_SQL = "INSERT INTO [Transaction](TransactionDate, FromAccount, ToAccount, Amount, Note) VALUES(?,?,?,?,?)";
-    String SELECT_ALL_SQL = "SELECT * FROM Transaction";
-    String SELECT_BY_ID_SQL = "SELECT * FROM Transaction WHERE TransactionID=?";
+    String SELECT_ALL_SQL = "SELECT * FROM [Transaction]";
+    String SELECT_BY_ID_SQL = "SELECT * FROM [Transaction] WHERE TransactionID=?";
 
     @Override
     public void insert(Transaction entity) {

@@ -6,12 +6,32 @@
 package ui;
 
 import com.formdev.flatlaf.FlatLightLaf;
+import dao.CardDAO;
+import dao.TransactionDAO;
+import dao.UserDetailDAO;
+import entity.Card;
+import entity.Transaction;
+import entity.User_Detail;
 import helper.AuthUser;
+import helper.DateHelper;
+import helper.ImageHelper;
+import helper.MsgHelper;
+import helper.UtilityHelper;
 import java.awt.Color;
+import java.awt.event.KeyEvent;
+import java.io.File;
+import java.util.Date;
+import java.util.List;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JFileChooser;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JTextField;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.table.DefaultTableModel;
 
 /**
  *
@@ -19,13 +39,433 @@ import javax.swing.UnsupportedLookAndFeelException;
  */
 public class MainJFrame extends javax.swing.JFrame {
 
+    CardDAO cardDAO = new CardDAO();
+    TransactionDAO transDAO = new TransactionDAO();
+    UserDetailDAO detailDAO = new UserDetailDAO();
+
+    Object[] cardNames = {"Agribank", "Sacombank", "Techcombank", "MBBank"};
+    int cardTableRow = -1;
+
     /**
      * Creates new form MainJFrame
      */
     public MainJFrame() {
         initComponents();
         setLocationRelativeTo(null);
+        initDashboard();
+        initTransfer();
+        initAccount();
+        initCard();
         setTitle("OMEGAPAY");
+    }
+
+    //-------------------------- Dashboard Section ---------------------------
+    private void initDashboard() {
+        User_Detail user_Detail = detailDAO.selectByID(AuthUser.user.getOmegaAccount());
+        fillCardsCombobox();
+        fillTransactionTable();
+        setDashboardForm(user_Detail);
+    }
+
+    private void fillTransactionTable() {
+        DefaultTableModel disableCellEdit = new DefaultTableModel() {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+
+        };
+        tblLastTransaction.setModel(disableCellEdit);
+        DefaultTableModel model = (DefaultTableModel) tblLastTransaction.getModel();
+        model.setRowCount(0);
+        model.setColumnCount(0);
+        model.setColumnIdentifiers(new Object[]{"Datetime", "From Account", "To Account", "Amount", "Note"});
+        User_Detail user = detailDAO.selectByID(AuthUser.user.getOmegaAccount());
+        try {
+            List<Transaction> list = transDAO.selectAll();
+            for (Transaction e : list) {
+                boolean checkFromAcc = e.getFromAccount().equals(AuthUser.user.getOmegaAccount());
+                boolean checkToAcc = e.getToAccount().equals(AuthUser.user.getOmegaAccount());
+                if (checkFromAcc || checkToAcc) {
+                    model.addRow(new Object[]{DateHelper.toString(e.getTransactionDate(), "hh:mm dd-MM-yyyy"),
+                        e.getFromAccount(), e.getToAccount(), UtilityHelper.toVND(e.getAmount()), e.getNote()});
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void fillCardsCombobox() {
+        DefaultComboBoxModel model = (DefaultComboBoxModel) cboCards.getModel();
+        model.removeAllElements();
+        List<Card> list = cardDAO.selectByOmegaAccount(AuthUser.user.getOmegaAccount());
+        if (list != null) {
+            for (Card e : list) {
+                model.addElement(e.getCardID());
+            }
+        }
+    }
+
+    private void fillCard() {
+        if (cboCards.getItemCount() != 0) {
+            Card card = cardDAO.selectByID((Integer) cboCards.getSelectedItem());
+            if (card != null) {
+                lblCardHolder.setText(card.getCardHolderName().toUpperCase());
+                lblExpiry.setText(DateHelper.toString(card.getExpirationDate(), "MM-yy"));
+                lblCardNumber.setText(card.getCardNumber().replaceAll("(.{" + 4 + "})", "$0 ").trim());
+                lblCardname.setText(card.getCardName());
+            }
+        }
+    }
+
+    private void setDashboardForm(User_Detail user) {
+        lblOmegaBalance.setText(UtilityHelper.toVND(user.getOmegaBalance()));
+    }
+
+    //-------------------------- Card Section ---------------------------
+    private void initCard() {
+        fillCardComboBox();
+        fillCardTable();
+        clearCardForm();
+    }
+
+    private void openAddCardDialog() {
+        new addCardJDialog(this, rootPaneCheckingEnabled).setVisible(true);
+    }
+
+    private void deleteCard() {
+        if (MsgHelper.confirm(this, "Do you want to remove card: " + txtCardNumber.getText())) {
+            int id = Integer.parseInt(lblCardID.getText());
+            cardDAO.delete(id);
+            fillCardTable();
+            clearCardForm();
+            MsgHelper.alert(this, "Remove card successfully!");
+        }
+    }
+
+    private void clearCardForm() {
+        lblCardID.setText("");
+        txtCardBalance.setText("");
+        txtCardHolder.setText("");
+        txtCardNumber.setText("");
+        txtExpirationDate.setText("");
+        txtBillingAddress.setText("");
+        cboCardNames.setSelectedIndex(0);
+        lblATMCardName.setText("");
+        lblATMCardNumber.setText("");
+        lblATMHolderName.setText("");
+        lblATMExpiry.setText("");
+        cardTableRow = -1;
+    }
+
+    private void fillCardComboBox() {
+        DefaultComboBoxModel model = (DefaultComboBoxModel) cboCardNames.getModel();
+        model.removeAllElements();
+        for (var e : cardNames) {
+            model.addElement(e);
+        }
+    }
+
+    public void fillCardTable() {
+        DefaultTableModel disableCellEdit = new DefaultTableModel() {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        tblCardList.setModel(disableCellEdit);
+        DefaultTableModel model = (DefaultTableModel) tblCardList.getModel();
+        model.setRowCount(0);
+        model.setColumnCount(0);
+        model.setColumnIdentifiers(new Object[]{"CardID", "CardNumber", "CardBalance", "Bank"});
+
+        try {
+            List<Card> list = cardDAO.selectByOmegaAccount(AuthUser.user.getOmegaAccount());
+            if (list != null) {
+                for (Card c : list) {
+                    Object[] row = {c.getCardID(), c.getCardNumber(), UtilityHelper.toVND(c.getCardBalance()), c.getCardName()};
+                    model.addRow(row);
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private Card getCardForm() {
+        Card card = new Card();
+        card.setCardID(Integer.parseInt(lblCardID.getText()));
+        card.setBillingAddress(txtBillingAddress.getText());
+        card.setCardBalance(Float.parseFloat(lblCardBalance.getToolTipText()));
+        card.setCardNumber(txtCardNumber.getText());
+        card.setExpirationDate(DateHelper.toDate(txtExpirationDate.getText(), "yyyy-MM-dd"));
+        card.setCardName((String) cboCardNames.getSelectedItem());
+        card.setCardHolderName(txtCardHolder.getText());
+        card.setPIN(new String(txtCurrentPIN.getPassword()));
+        card.setOmegaAccount(AuthUser.user.getOmegaAccount());
+        return card;
+    }
+
+    private void setCardForm(Card e) {
+        //set card form info
+        lblCardID.setText(String.valueOf(e.getCardID()));
+        cboCardNames.setSelectedItem(e.getCardName());
+        txtExpirationDate.setText(DateHelper.toString(e.getExpirationDate(), "dd-MM-yyyy"));
+        txtCardNumber.setText(e.getCardNumber());
+        txtCardHolder.setText(e.getCardHolderName());
+        txtBillingAddress.setText(e.getBillingAddress());
+        txtCardBalance.setText(UtilityHelper.toVND(e.getCardBalance()));
+        lblCardBalance.setToolTipText(String.valueOf(e.getCardBalance()));
+        lblCardSection2.setToolTipText(e.getPIN());
+
+        //set atm card info
+        lblATMHolderName.setText(e.getCardHolderName().toUpperCase());
+        // inserting a whitespace every 4 character. Ex: 222233331111 -> 2222 3333 111
+        lblATMCardNumber.setText(e.getCardNumber().replaceAll("(.{" + 4 + "})", "$0 ").trim());
+        lblATMExpiry.setText(DateHelper.toString(e.getExpirationDate(), "MM-yy"));
+        lblATMCardName.setText(e.getCardName());
+    }
+
+    private void displayClickedCard() {
+        int cardID = (int) tblCardList.getValueAt(this.cardTableRow, 0);
+        Card card = cardDAO.selectByID(cardID);
+        this.setCardForm(card);
+        tabCard.setSelectedIndex(0);
+    }
+
+    private void changePIN() {
+        String cardPIN = lblCardSection2.getToolTipText();
+        String userTypePIN = new String(txtCurrentPIN.getPassword());
+        String newPIN = new String(txtNewPIN.getPassword());
+        String retypePIN = new String(txtRetypePIN.getPassword());
+        String alertString = "";
+        if (cardPIN == null) {
+            alertString = "Choose a card to change PIN!\n";
+        } else if (!cardPIN.equals(userTypePIN)) {
+            alertString += "Card PIN is incorrect!\n";
+        } else if (!newPIN.equals(retypePIN)) {
+            alertString += "Retype PIN did not match new PIN!\n";
+        } else {
+            Card card = getCardForm();
+            card.setPIN(newPIN);
+            cardDAO.updatePIN(card);
+            fillCardTable();
+            displayClickedCard();
+            alertString += "Change PIN successfully!\n";
+        }
+        if (!alertString.equals("")) {
+            MsgHelper.alert(this, alertString);
+        }
+    }
+
+    //-------------------------- TransferSection ---------------------------
+    private void initTransfer() {
+        User_Detail userDetail = detailDAO.selectByID(AuthUser.user.getOmegaAccount());
+        lblCurrentOmegaBalance.setText(UtilityHelper.toVND(userDetail.getOmegaBalance()));
+    }
+
+    private void transferMoney() {
+        Float amount = UtilityHelper.toFloat(txtAmount.getText());
+        String toAccount = txtToAccount.getText();
+        User_Detail userDetail = detailDAO.selectByID(AuthUser.user.getOmegaAccount());
+        User_Detail checkDestination = detailDAO.selectByID(toAccount);
+        try {
+            if (toAccount.equals(AuthUser.user.getOmegaAccount())) {
+                MsgHelper.alert(this, "You can't send money to yourself!");
+            } else if (checkDestination == null) {
+                MsgHelper.alert(this, "Destination account is not exist!");
+            } else if (amount > userDetail.getOmegaBalance()) {
+                MsgHelper.alert(this, "Omega balance is not enough to transfer!");
+            } else if ((toAccount.length() == 0) || (amount == 0)) {
+                MsgHelper.alert(this, "Amount and account destination must not be empty!");
+            } else if (amount < 50000) {
+                MsgHelper.alert(this, "Minimum transfer is 50.000 VND");
+            } else {
+                Transaction tran = getTransferForm();
+                transDAO.insert(tran);
+                updateBalanceAfterTransfer(amount);
+                initTransfer();
+                clearTransferForm();
+                if (MsgHelper.confirm(this, "Transfer successfully! Do you want to print receipt?")) {
+                    printReceiptPDF();
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void printReceiptPDF() {
+        
+    }
+
+    private void restrictNumericValueOnly(KeyEvent ke, JTextField txt) {
+        if (!Character.isDigit(ke.getKeyChar())) {
+            txt.setText("");
+        }
+    }
+
+    private void updateBalanceAfterTransfer(float amount) {
+        User_Detail fromAccount = detailDAO.selectByID(AuthUser.user.getOmegaAccount());
+        User_Detail toAccount = detailDAO.selectByID(txtToAccount.getText());
+        //save 2 accounts balance to 2 variable
+        float fromBalance = fromAccount.getOmegaBalance();
+        float toBalance = toAccount.getOmegaBalance();
+        //subtract and add amount 
+        fromAccount.setOmegaBalance(fromBalance - amount);
+        toAccount.setOmegaBalance(toBalance + amount);
+        //update to database
+        detailDAO.updateBalance(fromAccount);
+        detailDAO.updateBalance(toAccount);
+    }
+
+    private void clearTransferForm() {
+        txtToAccount.setText("");
+        txtAmount.setText("");
+        txtAmount.setText("");
+    }
+
+    private Transaction getTransferForm() {
+        Transaction tran = new Transaction();
+        tran.setTransactionDate(new Date());
+        tran.setFromAccount(AuthUser.user.getOmegaAccount());
+        tran.setToAccount(txtToAccount.getText());
+        tran.setAmount(Float.parseFloat(txtAmount.getText()));
+        tran.setNote(txtNote.getText());
+        return tran;
+    }
+
+    //-------------------------- Account Section ---------------------------
+    private void initAccount() {
+        User_Detail user_Detail = detailDAO.selectByID(AuthUser.user.getOmegaAccount());
+        this.defaultEditable();
+        this.setAccountForm(user_Detail);
+    }
+
+    private void choosePhoto() {
+        JFileChooser fileChooser = new JFileChooser(System.getProperty("user.home") + "/Desktop");
+        if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            File file = fileChooser.getSelectedFile();
+            ImageHelper.saveFile(file);
+            ImageIcon icon = ImageHelper.readFile(file.getName(), lblPhoto);
+            lblPhoto.setIcon(icon);
+            lblPhoto.setToolTipText(file.getName());
+        }
+    }
+
+    private void updateUserDetail() {
+        User_Detail entity = getAccountForm();
+        if (isAccountFormValid()) {
+            try {
+                detailDAO.update(entity);
+                initAccount();
+                MsgHelper.alert(this, "Update successfully!");
+            } catch (Exception e) {
+                MsgHelper.alert(this, "Update failed!");
+            }
+        }
+    }
+
+    private boolean isAccountFormValid() {
+        boolean isValid = true;
+        String error = "";
+        if (txtFirstname.getText().equals("")) {
+            error += "First name can not be empty!\n";
+            isValid = false;
+        }
+        if (txtLastname.getText().equals("")) {
+            error += "Last name can not be empty!\n";
+            isValid = false;
+        }
+        if (!txtEmail.getText().matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
+            error += "Email is invalid!\n";
+            isValid = false;
+        }
+        if (txtPhone.getText().length() < 10) {
+            error += "Phone must have the length of 10!\n";
+            isValid = false;
+        }
+        if (txtBirthday.getDate() == null) {
+            error += "Birthday is invalid!\n";
+            isValid = false;
+        }
+        if (txtAddress.getText().equals("")) {
+            error += "Address can not be empty!\n";
+            isValid = false;
+        }
+        if (!error.equals("")) {
+            MsgHelper.alert(this, error);
+        }
+        return isValid;
+    }
+
+    private void setAccountForm(User_Detail e) {
+        txtOmegaAccount.setText(e.getOmegaAccount());
+        txtFirstname.setText(e.getFirstName());
+        txtLastname.setText(e.getLastName());
+        txtEmail.setText(e.getEmail());
+        txtPhone.setText(e.getPhone());
+        rdoMale.setSelected(e.getGender());
+        rdoFemale.setSelected(!e.getGender());
+        txtBirthday.setDate(e.getBirthday());
+        txtAddress.setText(e.getAddress());
+        txtDayCreated.setText(DateHelper.toString(e.getDayCreated(), "dd-MM-yyyy"));
+        txtStatus.setText(e.getStatus());
+        if (e.getPhoto() != null) {
+            lblPhoto.setToolTipText(e.getPhoto());
+            lblPhoto.setIcon(ImageHelper.readFile(e.getPhoto(), lblPhoto));
+        }
+        txtOmegaBalance.setText(UtilityHelper.toVND(e.getOmegaBalance()));
+        lblBalance.setToolTipText(String.valueOf(e.getOmegaBalance()));
+    }
+
+    private User_Detail getAccountForm() {
+        User_Detail entity = new User_Detail();
+        entity.setOmegaAccount(txtOmegaAccount.getText());
+        entity.setFirstName(txtFirstname.getText());
+        entity.setLastName(txtLastname.getText());
+        entity.setEmail(txtEmail.getText());
+        entity.setPhone(txtPhone.getText());
+        entity.setGender(rdoMale.isSelected());
+        entity.setBirthday(txtBirthday.getDate());
+        entity.setAddress(txtAddress.getText());
+        entity.setDayCreated(DateHelper.toDate(txtDayCreated.getText(), "dd-MM-yyyy"));
+        entity.setStatus(txtStatus.getText());
+        entity.setPhoto(lblPhoto.getToolTipText());
+        entity.setOmegaBalance(Float.parseFloat(lblBalance.getToolTipText()));
+        return entity;
+    }
+
+    private void defaultEditable() {
+        txtOmegaAccount.setEnabled(false);
+        txtFirstname.setEnabled(false);
+        txtLastname.setEnabled(false);
+        txtAddress.setEnabled(false);
+        txtEmail.setEnabled(false);
+        txtPhone.setEnabled(false);
+        txtBirthday.setEnabled(false);
+        txtOmegaBalance.setEnabled(false);
+        rdoFemale.setEnabled(false);
+        rdoMale.setEnabled(false);
+        txtDayCreated.setEnabled(false);
+        txtStatus.setEnabled(false);
+    }
+
+    private void updateEditable() {
+        //Can edit all except OmegaAccount, OmegaBalance, DayCreated and Status
+        txtOmegaAccount.setEnabled(false);
+        txtFirstname.setEnabled(true);
+        txtLastname.setEnabled(true);
+        txtAddress.setEnabled(true);
+        txtEmail.setEnabled(true);
+        txtPhone.setEnabled(true);
+        txtBirthday.setEnabled(true);
+        txtOmegaBalance.setEnabled(false);
+        rdoFemale.setEnabled(true);
+        rdoMale.setEnabled(true);
+        txtDayCreated.setEnabled(false);
+        txtStatus.setEnabled(false);
     }
 
     /**
@@ -65,10 +505,10 @@ public class MainJFrame extends javax.swing.JFrame {
         jLabel14 = new javax.swing.JLabel();
         lblOmegaBalance = new javax.swing.JLabel();
         lblAddMoney = new javax.swing.JLabel();
-        lblCVVNum = new javax.swing.JLabel();
+        lblExpiry = new javax.swing.JLabel();
         lblCVVTitle = new javax.swing.JLabel();
-        lblCardName = new javax.swing.JLabel();
-        lblCardVietelPay = new javax.swing.JLabel();
+        lblCardHolder = new javax.swing.JLabel();
+        lblCardname = new javax.swing.JLabel();
         lblCardNumber = new javax.swing.JLabel();
         lblCardSection = new javax.swing.JLabel();
         lblLastTransaction = new javax.swing.JLabel();
@@ -77,6 +517,8 @@ public class MainJFrame extends javax.swing.JFrame {
         lblOverview = new javax.swing.JLabel();
         btnTransferMoney = new javax.swing.JButton();
         cboCards = new javax.swing.JComboBox<>();
+        btnPDF = new javax.swing.JButton();
+        btnExcel = new javax.swing.JButton();
         pnlTransferSection = new javax.swing.JPanel();
         tabTransfer = new javax.swing.JTabbedPane();
         pnlOmegapayAcc = new javax.swing.JPanel();
@@ -88,7 +530,7 @@ public class MainJFrame extends javax.swing.JFrame {
         jScrollPane2 = new javax.swing.JScrollPane();
         txtNote = new javax.swing.JTextArea();
         jLabel25 = new javax.swing.JLabel();
-        jLabel26 = new javax.swing.JLabel();
+        lblCurrentOmegaBalance = new javax.swing.JLabel();
         btnTransfer = new javax.swing.JButton();
         pnlAccountSection = new javax.swing.JPanel();
         pnlMain = new javax.swing.JPanel();
@@ -113,7 +555,7 @@ public class MainJFrame extends javax.swing.JFrame {
         txtStatus = new javax.swing.JTextField();
         txtFirstname = new javax.swing.JTextField();
         jLabel39 = new javax.swing.JLabel();
-        jLabel40 = new javax.swing.JLabel();
+        lblBalance = new javax.swing.JLabel();
         txtOmegaBalance = new javax.swing.JTextField();
         rdoMale = new javax.swing.JRadioButton();
         rdoFemale = new javax.swing.JRadioButton();
@@ -125,44 +567,50 @@ public class MainJFrame extends javax.swing.JFrame {
         pnlCardDetail = new javax.swing.JPanel();
         jPanel4 = new javax.swing.JPanel();
         jLabel42 = new javax.swing.JLabel();
+        tabCard = new javax.swing.JTabbedPane();
+        pnlCardDetail1 = new javax.swing.JPanel();
         pnlCard2 = new javax.swing.JPanel();
-        lblCVVNum1 = new javax.swing.JLabel();
+        lblATMExpiry = new javax.swing.JLabel();
         lblCVVTitle1 = new javax.swing.JLabel();
-        lblCardName1 = new javax.swing.JLabel();
-        lblCardVietelPay1 = new javax.swing.JLabel();
-        lblCardNumber1 = new javax.swing.JLabel();
+        lblATMHolderName = new javax.swing.JLabel();
+        lblATMCardName = new javax.swing.JLabel();
+        lblATMCardNumber = new javax.swing.JLabel();
         lblCardSection2 = new javax.swing.JLabel();
-        cboCardName = new javax.swing.JComboBox<>();
+        cboCardNames = new javax.swing.JComboBox<>();
         txtExpirationDate = new javax.swing.JTextField();
         jLabel19 = new javax.swing.JLabel();
         txtCardNumber = new javax.swing.JTextField();
-        jLabel43 = new javax.swing.JLabel();
-        txtCardHolder = new javax.swing.JTextField();
         jLabel44 = new javax.swing.JLabel();
-        txtBillingAddress = new javax.swing.JTextField();
+        txtCardHolder = new javax.swing.JTextField();
         jLabel45 = new javax.swing.JLabel();
+        txtBillingAddress = new javax.swing.JTextField();
+        jLabel46 = new javax.swing.JLabel();
         btnSave = new javax.swing.JButton();
         lblAddNew = new javax.swing.JLabel();
         lblRemoveCard = new javax.swing.JLabel();
         btnPrev = new javax.swing.JButton();
         btnNext = new javax.swing.JButton();
         jLabel27 = new javax.swing.JLabel();
-        lblCardOrder = new javax.swing.JLabel();
+        lblCardID = new javax.swing.JLabel();
+        lblCardOrder1 = new javax.swing.JLabel();
+        jPanel2 = new javax.swing.JPanel();
+        jScrollPane3 = new javax.swing.JScrollPane();
+        tblCardList = new javax.swing.JTable();
         jPanel6 = new javax.swing.JPanel();
         jPanel8 = new javax.swing.JPanel();
-        jLabel49 = new javax.swing.JLabel();
+        lblCardBalance = new javax.swing.JLabel();
         txtCardBalance = new javax.swing.JTextField();
         jLabel50 = new javax.swing.JLabel();
         jPanel7 = new javax.swing.JPanel();
         jPanel9 = new javax.swing.JPanel();
         jLabel51 = new javax.swing.JLabel();
-        txtCurrentPIN = new javax.swing.JTextField();
         jLabel47 = new javax.swing.JLabel();
         jLabel48 = new javax.swing.JLabel();
-        txtNewPIN = new javax.swing.JTextField();
-        txtRetypePIN = new javax.swing.JTextField();
         jLabel52 = new javax.swing.JLabel();
         btnSavePIN = new javax.swing.JButton();
+        txtCurrentPIN = new javax.swing.JPasswordField();
+        txtNewPIN = new javax.swing.JPasswordField();
+        txtRetypePIN = new javax.swing.JPasswordField();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -439,25 +887,25 @@ public class MainJFrame extends javax.swing.JFrame {
 
         pnlHomeSection.add(jPanel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 70, 260, 170));
 
-        lblCVVNum.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        lblCVVNum.setForeground(new java.awt.Color(255, 255, 255));
-        lblCVVNum.setText("11/25");
-        pnlHomeSection.add(lblCVVNum, new org.netbeans.lib.awtextra.AbsoluteConstraints(240, 470, 40, -1));
+        lblExpiry.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        lblExpiry.setForeground(new java.awt.Color(255, 255, 255));
+        lblExpiry.setText("11/25");
+        pnlHomeSection.add(lblExpiry, new org.netbeans.lib.awtextra.AbsoluteConstraints(240, 470, 40, -1));
 
         lblCVVTitle.setFont(new java.awt.Font("Credit Card", 0, 12)); // NOI18N
         lblCVVTitle.setForeground(new java.awt.Color(255, 255, 255));
         lblCVVTitle.setText("EXPIRY");
         pnlHomeSection.add(lblCVVTitle, new org.netbeans.lib.awtextra.AbsoluteConstraints(190, 470, 40, -1));
 
-        lblCardName.setFont(new java.awt.Font("Credit Card", 2, 11)); // NOI18N
-        lblCardName.setForeground(new java.awt.Color(255, 255, 255));
-        lblCardName.setText("TO MINH TRI");
-        pnlHomeSection.add(lblCardName, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, 470, 120, -1));
+        lblCardHolder.setFont(new java.awt.Font("Credit Card", 2, 11)); // NOI18N
+        lblCardHolder.setForeground(new java.awt.Color(255, 255, 255));
+        lblCardHolder.setText("TO MINH TRI");
+        pnlHomeSection.add(lblCardHolder, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, 470, 120, -1));
 
-        lblCardVietelPay.setFont(new java.awt.Font("Credit Card", 0, 14)); // NOI18N
-        lblCardVietelPay.setForeground(new java.awt.Color(255, 255, 255));
-        lblCardVietelPay.setText("ARGIBANK");
-        pnlHomeSection.add(lblCardVietelPay, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 360, 80, -1));
+        lblCardname.setFont(new java.awt.Font("Courier New", 1, 14)); // NOI18N
+        lblCardname.setForeground(new java.awt.Color(255, 255, 255));
+        lblCardname.setText("ARGIBANK");
+        pnlHomeSection.add(lblCardname, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 360, 80, -1));
 
         lblCardNumber.setFont(new java.awt.Font("Credit Card", 0, 12)); // NOI18N
         lblCardNumber.setForeground(new java.awt.Color(255, 255, 255));
@@ -513,7 +961,30 @@ public class MainJFrame extends javax.swing.JFrame {
         cboCards.setFont(new java.awt.Font("Arial", 1, 12)); // NOI18N
         cboCards.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Card_1", "Card_2", "Card_3", "Card_4" }));
         cboCards.setBorder(javax.swing.BorderFactory.createEtchedBorder());
+        cboCards.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cboCardsActionPerformed(evt);
+            }
+        });
         pnlHomeSection.add(cboCards, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 310, 130, 20));
+
+        btnPDF.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icon/icons8_pdf_20px_1.png"))); // NOI18N
+        btnPDF.setText("PDF");
+        btnPDF.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnPDFActionPerformed(evt);
+            }
+        });
+        pnlHomeSection.add(btnPDF, new org.netbeans.lib.awtextra.AbsoluteConstraints(700, 30, 90, -1));
+
+        btnExcel.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icon/icons8_file_excel_20px.png"))); // NOI18N
+        btnExcel.setText("Excel");
+        btnExcel.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnExcelActionPerformed(evt);
+            }
+        });
+        pnlHomeSection.add(btnExcel, new org.netbeans.lib.awtextra.AbsoluteConstraints(800, 30, 90, -1));
 
         rightJPanel.add(pnlHomeSection, "card2");
 
@@ -526,7 +997,16 @@ public class MainJFrame extends javax.swing.JFrame {
 
         pnlOmegapayAcc.setBackground(new java.awt.Color(255, 255, 255));
         pnlOmegapayAcc.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
+
+        txtAmount.setText("100000");
+        txtAmount.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyTyped(java.awt.event.KeyEvent evt) {
+                txtAmountKeyTyped(evt);
+            }
+        });
         pnlOmegapayAcc.add(txtAmount, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 120, 370, 40));
+
+        txtToAccount.setText("111299893443");
         pnlOmegapayAcc.add(txtToAccount, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 40, 370, 40));
 
         jLabel20.setText("Omega Account");
@@ -540,6 +1020,7 @@ public class MainJFrame extends javax.swing.JFrame {
 
         txtNote.setColumns(20);
         txtNote.setRows(5);
+        txtNote.setText("test transfer");
         jScrollPane2.setViewportView(txtNote);
 
         pnlOmegapayAcc.add(jScrollPane2, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 190, 370, 70));
@@ -548,10 +1029,10 @@ public class MainJFrame extends javax.swing.JFrame {
         jLabel25.setText("Current: ");
         pnlOmegapayAcc.add(jLabel25, new org.netbeans.lib.awtextra.AbsoluteConstraints(230, 100, 50, -1));
 
-        jLabel26.setForeground(new java.awt.Color(51, 255, 51));
-        jLabel26.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
-        jLabel26.setText("304.000 VND");
-        pnlOmegapayAcc.add(jLabel26, new org.netbeans.lib.awtextra.AbsoluteConstraints(270, 100, 110, -1));
+        lblCurrentOmegaBalance.setForeground(new java.awt.Color(51, 255, 51));
+        lblCurrentOmegaBalance.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        lblCurrentOmegaBalance.setText("304.000 VND");
+        pnlOmegapayAcc.add(lblCurrentOmegaBalance, new org.netbeans.lib.awtextra.AbsoluteConstraints(270, 100, 110, -1));
 
         tabTransfer.addTab("TO OMEGAPAY ACCOUNT", pnlOmegapayAcc);
 
@@ -568,6 +1049,11 @@ public class MainJFrame extends javax.swing.JFrame {
             }
             public void mouseExited(java.awt.event.MouseEvent evt) {
                 btnTransferMouseExited(evt);
+            }
+        });
+        btnTransfer.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnTransferActionPerformed(evt);
             }
         });
         pnlTransferSection.add(btnTransfer, new org.netbeans.lib.awtextra.AbsoluteConstraints(350, 470, 170, 40));
@@ -624,7 +1110,7 @@ public class MainJFrame extends javax.swing.JFrame {
 
         jLabel39.setText("Birthday");
 
-        jLabel40.setText("Omega Balance");
+        lblBalance.setText("Omega Balance");
 
         txtOmegaBalance.setText("304.000 VND");
 
@@ -634,6 +1120,8 @@ public class MainJFrame extends javax.swing.JFrame {
 
         genderGroup.add(rdoFemale);
         rdoFemale.setText("Female");
+
+        txtBirthday.setDateFormatString("yyyy-MM-dd");
 
         javax.swing.GroupLayout pnlMainLayout = new javax.swing.GroupLayout(pnlMain);
         pnlMain.setLayout(pnlMainLayout);
@@ -692,7 +1180,7 @@ public class MainJFrame extends javax.swing.JFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(txtDayCreated, javax.swing.GroupLayout.PREFERRED_SIZE, 150, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(pnlMainLayout.createSequentialGroup()
-                        .addComponent(jLabel40, javax.swing.GroupLayout.PREFERRED_SIZE, 89, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(lblBalance, javax.swing.GroupLayout.PREFERRED_SIZE, 89, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(18, 18, 18)
                         .addComponent(txtOmegaBalance)))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
@@ -745,7 +1233,7 @@ public class MainJFrame extends javax.swing.JFrame {
                                     .addComponent(txtStatus, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                                 .addGap(18, 18, 18)
                                 .addGroup(pnlMainLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                    .addComponent(jLabel40)
+                                    .addComponent(lblBalance)
                                     .addComponent(txtOmegaBalance, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
                         .addGap(21, 21, 21)
                         .addComponent(jLabel39))
@@ -754,11 +1242,26 @@ public class MainJFrame extends javax.swing.JFrame {
         );
 
         btnUpdate.setText("UPDATE");
+        btnUpdate.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnUpdateActionPerformed(evt);
+            }
+        });
 
         btnEdit.setText("Edit");
+        btnEdit.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnEditActionPerformed(evt);
+            }
+        });
 
         lblPhoto.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         lblPhoto.setIcon(new javax.swing.ImageIcon(getClass().getResource("/photo/elonmusk.png"))); // NOI18N
+        lblPhoto.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                lblPhotoMouseClicked(evt);
+            }
+        });
 
         javax.swing.GroupLayout pnlAccountSectionLayout = new javax.swing.GroupLayout(pnlAccountSection);
         pnlAccountSection.setLayout(pnlAccountSectionLayout);
@@ -807,60 +1310,62 @@ public class MainJFrame extends javax.swing.JFrame {
         jLabel42.setText("CARD DETAILS");
         jPanel4.add(jLabel42, new org.netbeans.lib.awtextra.AbsoluteConstraints(190, 10, 200, -1));
 
+        pnlCard2.setToolTipText("");
         pnlCard2.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
-        lblCVVNum1.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        lblCVVNum1.setForeground(new java.awt.Color(255, 255, 255));
-        lblCVVNum1.setText("11/25");
-        pnlCard2.add(lblCVVNum1, new org.netbeans.lib.awtextra.AbsoluteConstraints(220, 150, 40, -1));
+        lblATMExpiry.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        lblATMExpiry.setForeground(new java.awt.Color(255, 255, 255));
+        lblATMExpiry.setText("11/25");
+        pnlCard2.add(lblATMExpiry, new org.netbeans.lib.awtextra.AbsoluteConstraints(220, 150, 40, -1));
 
         lblCVVTitle1.setFont(new java.awt.Font("Credit Card", 0, 12)); // NOI18N
         lblCVVTitle1.setForeground(new java.awt.Color(255, 255, 255));
         lblCVVTitle1.setText("EXPIRY");
         pnlCard2.add(lblCVVTitle1, new org.netbeans.lib.awtextra.AbsoluteConstraints(170, 150, 40, -1));
 
-        lblCardName1.setFont(new java.awt.Font("Credit Card", 2, 11)); // NOI18N
-        lblCardName1.setForeground(new java.awt.Color(255, 255, 255));
-        lblCardName1.setText("TO MINH TRI");
-        pnlCard2.add(lblCardName1, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 150, 120, -1));
+        lblATMHolderName.setFont(new java.awt.Font("Credit Card", 2, 11)); // NOI18N
+        lblATMHolderName.setForeground(new java.awt.Color(255, 255, 255));
+        lblATMHolderName.setText("TO MINH TRI");
+        pnlCard2.add(lblATMHolderName, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 150, 120, -1));
 
-        lblCardVietelPay1.setFont(new java.awt.Font("Credit Card", 0, 14)); // NOI18N
-        lblCardVietelPay1.setForeground(new java.awt.Color(255, 255, 255));
-        lblCardVietelPay1.setText("ARGIBANK");
-        pnlCard2.add(lblCardVietelPay1, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 40, 80, -1));
+        lblATMCardName.setFont(new java.awt.Font("Courier New", 1, 14)); // NOI18N
+        lblATMCardName.setForeground(new java.awt.Color(255, 255, 255));
+        lblATMCardName.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        lblATMCardName.setText("ARGIBANK");
+        pnlCard2.add(lblATMCardName, new org.netbeans.lib.awtextra.AbsoluteConstraints(110, 40, 150, -1));
 
-        lblCardNumber1.setFont(new java.awt.Font("Credit Card", 0, 12)); // NOI18N
-        lblCardNumber1.setForeground(new java.awt.Color(255, 255, 255));
-        lblCardNumber1.setText("0375 9485 2934 2834");
-        pnlCard2.add(lblCardNumber1, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 120, 200, 20));
+        lblATMCardNumber.setFont(new java.awt.Font("Credit Card", 0, 12)); // NOI18N
+        lblATMCardNumber.setForeground(new java.awt.Color(255, 255, 255));
+        lblATMCardNumber.setText("0375 9485 2934 2834");
+        pnlCard2.add(lblATMCardNumber, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 120, 200, 20));
 
         lblCardSection2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icon/card_1.png"))); // NOI18N
         pnlCard2.add(lblCardSection2, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 20, 260, -1));
 
-        cboCardName.setFont(new java.awt.Font("Arial", 1, 12)); // NOI18N
-        cboCardName.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "ARGIBANK", "SACOMBANK", "MBBANK", "TECHCOMBANK", " " }));
-        cboCardName.setBorder(javax.swing.BorderFactory.createEtchedBorder());
-        cboCardName.addActionListener(new java.awt.event.ActionListener() {
+        cboCardNames.setFont(new java.awt.Font("Arial", 1, 12)); // NOI18N
+        cboCardNames.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Agribank", " " }));
+        cboCardNames.setBorder(javax.swing.BorderFactory.createEtchedBorder());
+        cboCardNames.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cboCardNameActionPerformed(evt);
+                cboCardNamesActionPerformed(evt);
             }
         });
 
-        txtExpirationDate.setText("11/2025");
+        txtExpirationDate.setText("1-11-2025");
 
         jLabel19.setText("Card name");
 
-        txtCardNumber.setText("0375 9485 2934 2834");
+        txtCardNumber.setText("650492834958");
 
-        jLabel43.setText("Card number");
+        jLabel44.setText("Card number");
 
-        txtCardHolder.setText("TO MINH TRI");
+        txtCardHolder.setText("To Minh Tri");
 
-        jLabel44.setText("Cardholder's name");
+        jLabel45.setText("Cardholder's name");
 
-        txtBillingAddress.setText("No.23 St. Truong Chinh, HCM City");
+        txtBillingAddress.setText("No.69 St. Truong Chinh, HCM");
 
-        jLabel45.setText("Billing address");
+        jLabel46.setText("Billing address");
 
         btnSave.setBackground(new java.awt.Color(238, 0, 51));
         btnSave.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
@@ -871,123 +1376,208 @@ public class MainJFrame extends javax.swing.JFrame {
         lblAddNew.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         lblAddNew.setForeground(new java.awt.Color(51, 255, 51));
         lblAddNew.setText("Add new card");
+        lblAddNew.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                lblAddNewMouseClicked(evt);
+            }
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                lblAddNewMouseEntered(evt);
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                lblAddNewMouseExited(evt);
+            }
+        });
 
         lblRemoveCard.setBackground(new java.awt.Color(238, 0, 51));
         lblRemoveCard.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         lblRemoveCard.setForeground(new java.awt.Color(238, 0, 51));
         lblRemoveCard.setText("Remove card");
+        lblRemoveCard.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                lblRemoveCardMouseClicked(evt);
+            }
+        });
 
         btnPrev.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icon/icons8_left_20px.png"))); // NOI18N
+        btnPrev.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnPrevActionPerformed(evt);
+            }
+        });
 
         btnNext.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icon/icons8_right_20px.png"))); // NOI18N
+        btnNext.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnNextActionPerformed(evt);
+            }
+        });
 
         jLabel27.setText("Expiration date");
 
-        lblCardOrder.setFont(new java.awt.Font("Credit Card", 2, 14)); // NOI18N
-        lblCardOrder.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        lblCardOrder.setText("CARD 1");
+        lblCardID.setFont(new java.awt.Font("Credit Card", 2, 14)); // NOI18N
+        lblCardID.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        lblCardID.setText("1");
+
+        lblCardOrder1.setFont(new java.awt.Font("Courier New", 1, 14)); // NOI18N
+        lblCardOrder1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        lblCardOrder1.setText("Card");
+
+        javax.swing.GroupLayout pnlCardDetail1Layout = new javax.swing.GroupLayout(pnlCardDetail1);
+        pnlCardDetail1.setLayout(pnlCardDetail1Layout);
+        pnlCardDetail1Layout.setHorizontalGroup(
+            pnlCardDetail1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(pnlCardDetail1Layout.createSequentialGroup()
+                .addGroup(pnlCardDetail1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, pnlCardDetail1Layout.createSequentialGroup()
+                        .addGap(109, 109, 109)
+                        .addComponent(lblCardOrder1, javax.swing.GroupLayout.PREFERRED_SIZE, 48, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(lblCardID, javax.swing.GroupLayout.PREFERRED_SIZE, 98, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(71, 71, 71)
+                        .addGroup(pnlCardDetail1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(pnlCardDetail1Layout.createSequentialGroup()
+                                .addGroup(pnlCardDetail1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(jLabel19, javax.swing.GroupLayout.PREFERRED_SIZE, 117, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(jLabel27, javax.swing.GroupLayout.PREFERRED_SIZE, 117, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addGap(0, 0, Short.MAX_VALUE))
+                            .addComponent(cboCardNames, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                    .addGroup(pnlCardDetail1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                        .addGroup(pnlCardDetail1Layout.createSequentialGroup()
+                            .addGroup(pnlCardDetail1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                .addGroup(pnlCardDetail1Layout.createSequentialGroup()
+                                    .addGap(30, 30, 30)
+                                    .addComponent(lblAddNew, javax.swing.GroupLayout.PREFERRED_SIZE, 99, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addGroup(pnlCardDetail1Layout.createSequentialGroup()
+                                    .addContainerGap()
+                                    .addComponent(pnlCard2, javax.swing.GroupLayout.PREFERRED_SIZE, 298, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                            .addGap(28, 28, 28)
+                            .addGroup(pnlCardDetail1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                .addComponent(txtExpirationDate, javax.swing.GroupLayout.PREFERRED_SIZE, 232, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(jLabel44, javax.swing.GroupLayout.PREFERRED_SIZE, 110, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(txtCardNumber, javax.swing.GroupLayout.PREFERRED_SIZE, 232, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(jLabel45, javax.swing.GroupLayout.PREFERRED_SIZE, 113, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(txtCardHolder, javax.swing.GroupLayout.PREFERRED_SIZE, 232, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(jLabel46, javax.swing.GroupLayout.PREFERRED_SIZE, 113, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(txtBillingAddress, javax.swing.GroupLayout.PREFERRED_SIZE, 232, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addGroup(pnlCardDetail1Layout.createSequentialGroup()
+                            .addGap(30, 30, 30)
+                            .addComponent(lblRemoveCard, javax.swing.GroupLayout.PREFERRED_SIZE, 99, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGap(203, 203, 203)
+                            .addComponent(btnSave, javax.swing.GroupLayout.PREFERRED_SIZE, 232, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGroup(pnlCardDetail1Layout.createSequentialGroup()
+                            .addGap(200, 200, 200)
+                            .addComponent(btnPrev, javax.swing.GroupLayout.PREFERRED_SIZE, 70, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGap(20, 20, 20)
+                            .addComponent(btnNext, javax.swing.GroupLayout.PREFERRED_SIZE, 70, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                .addGap(15, 15, 15))
+        );
+        pnlCardDetail1Layout.setVerticalGroup(
+            pnlCardDetail1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(pnlCardDetail1Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(pnlCardDetail1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addGroup(pnlCardDetail1Layout.createSequentialGroup()
+                        .addComponent(jLabel19)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(pnlCardDetail1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(cboCardNames, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(lblCardID, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(lblCardOrder1, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(jLabel27)
+                        .addGap(6, 6, 6)
+                        .addComponent(txtExpirationDate, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(6, 6, 6)
+                        .addComponent(jLabel44)
+                        .addGap(6, 6, 6)
+                        .addComponent(txtCardNumber, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(6, 6, 6)
+                        .addComponent(jLabel45)
+                        .addGap(6, 6, 6)
+                        .addComponent(txtCardHolder, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(pnlCard2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGroup(pnlCardDetail1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(pnlCardDetail1Layout.createSequentialGroup()
+                        .addGap(6, 6, 6)
+                        .addComponent(jLabel46)
+                        .addGap(6, 6, 6)
+                        .addComponent(txtBillingAddress, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(pnlCardDetail1Layout.createSequentialGroup()
+                        .addGap(62, 62, 62)
+                        .addComponent(lblAddNew)))
+                .addGap(5, 5, 5)
+                .addGroup(pnlCardDetail1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(pnlCardDetail1Layout.createSequentialGroup()
+                        .addGap(15, 15, 15)
+                        .addComponent(lblRemoveCard))
+                    .addComponent(btnSave, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(54, 54, 54)
+                .addGroup(pnlCardDetail1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(btnPrev)
+                    .addComponent(btnNext))
+                .addContainerGap(9, Short.MAX_VALUE))
+        );
+
+        tabCard.addTab("Card", pnlCardDetail1);
+
+        tblCardList.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null}
+            },
+            new String [] {
+                "Title 1", "Title 2", "Title 3", "Title 4"
+            }
+        ));
+        tblCardList.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                tblCardListMouseClicked(evt);
+            }
+        });
+        jScrollPane3.setViewportView(tblCardList);
+
+        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
+        jPanel2.setLayout(jPanel2Layout);
+        jPanel2Layout.setHorizontalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 579, Short.MAX_VALUE)
+        );
+        jPanel2Layout.setVerticalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel2Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 494, Short.MAX_VALUE))
+        );
+
+        tabCard.addTab("List", jPanel2);
 
         javax.swing.GroupLayout pnlCardDetailLayout = new javax.swing.GroupLayout(pnlCardDetail);
         pnlCardDetail.setLayout(pnlCardDetailLayout);
         pnlCardDetailLayout.setHorizontalGroup(
             pnlCardDetailLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(pnlCardDetailLayout.createSequentialGroup()
-                .addGroup(pnlCardDetailLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, 579, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGroup(pnlCardDetailLayout.createSequentialGroup()
-                        .addGroup(pnlCardDetailLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(pnlCardDetailLayout.createSequentialGroup()
-                                .addGap(30, 30, 30)
-                                .addComponent(lblAddNew, javax.swing.GroupLayout.PREFERRED_SIZE, 99, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(pnlCardDetailLayout.createSequentialGroup()
-                                .addContainerGap()
-                                .addComponent(pnlCard2, javax.swing.GroupLayout.PREFERRED_SIZE, 298, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                        .addGap(28, 28, 28)
-                        .addGroup(pnlCardDetailLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(txtExpirationDate, javax.swing.GroupLayout.PREFERRED_SIZE, 232, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel43, javax.swing.GroupLayout.PREFERRED_SIZE, 110, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(txtCardNumber, javax.swing.GroupLayout.PREFERRED_SIZE, 232, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel44, javax.swing.GroupLayout.PREFERRED_SIZE, 113, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(txtCardHolder, javax.swing.GroupLayout.PREFERRED_SIZE, 232, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel45, javax.swing.GroupLayout.PREFERRED_SIZE, 113, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(txtBillingAddress, javax.swing.GroupLayout.PREFERRED_SIZE, 232, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                    .addGroup(pnlCardDetailLayout.createSequentialGroup()
-                        .addGap(30, 30, 30)
-                        .addComponent(lblRemoveCard, javax.swing.GroupLayout.PREFERRED_SIZE, 99, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(203, 203, 203)
-                        .addComponent(btnSave, javax.swing.GroupLayout.PREFERRED_SIZE, 232, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(pnlCardDetailLayout.createSequentialGroup()
-                        .addGap(200, 200, 200)
-                        .addComponent(btnPrev, javax.swing.GroupLayout.PREFERRED_SIZE, 70, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(20, 20, 20)
-                        .addComponent(btnNext, javax.swing.GroupLayout.PREFERRED_SIZE, 70, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addGroup(pnlCardDetailLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(tabCard))
                 .addGap(0, 0, Short.MAX_VALUE))
-            .addGroup(pnlCardDetailLayout.createSequentialGroup()
-                .addGap(112, 112, 112)
-                .addComponent(lblCardOrder, javax.swing.GroupLayout.PREFERRED_SIZE, 85, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(135, 135, 135)
-                .addGroup(pnlCardDetailLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(pnlCardDetailLayout.createSequentialGroup()
-                        .addComponent(cboCardName, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addContainerGap())
-                    .addGroup(pnlCardDetailLayout.createSequentialGroup()
-                        .addGroup(pnlCardDetailLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jLabel19, javax.swing.GroupLayout.PREFERRED_SIZE, 117, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel27, javax.swing.GroupLayout.PREFERRED_SIZE, 117, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(0, 0, Short.MAX_VALUE))))
         );
         pnlCardDetailLayout.setVerticalGroup(
             pnlCardDetailLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(pnlCardDetailLayout.createSequentialGroup()
                 .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, 43, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(41, 41, 41)
-                .addGroup(pnlCardDetailLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addGroup(pnlCardDetailLayout.createSequentialGroup()
-                        .addComponent(jLabel19)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(pnlCardDetailLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(cboCardName, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(lblCardOrder, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jLabel27)
-                        .addGap(6, 6, 6)
-                        .addComponent(txtExpirationDate, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(6, 6, 6)
-                        .addComponent(jLabel43)
-                        .addGap(6, 6, 6)
-                        .addComponent(txtCardNumber, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(6, 6, 6)
-                        .addComponent(jLabel44)
-                        .addGap(6, 6, 6)
-                        .addComponent(txtCardHolder, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(pnlCard2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGroup(pnlCardDetailLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(pnlCardDetailLayout.createSequentialGroup()
-                        .addGap(6, 6, 6)
-                        .addComponent(jLabel45)
-                        .addGap(6, 6, 6)
-                        .addComponent(txtBillingAddress, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(pnlCardDetailLayout.createSequentialGroup()
-                        .addGap(62, 62, 62)
-                        .addComponent(lblAddNew)))
-                .addGap(5, 5, 5)
-                .addGroup(pnlCardDetailLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(pnlCardDetailLayout.createSequentialGroup()
-                        .addGap(15, 15, 15)
-                        .addComponent(lblRemoveCard))
-                    .addComponent(btnSave, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(54, 54, 54)
-                .addGroup(pnlCardDetailLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(btnPrev)
-                    .addComponent(btnNext)))
+                .addGap(0, 0, 0)
+                .addComponent(tabCard, javax.swing.GroupLayout.PREFERRED_SIZE, 533, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 0, 0))
         );
 
         jPanel8.setBackground(new java.awt.Color(238, 0, 51));
 
-        jLabel49.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
-        jLabel49.setForeground(new java.awt.Color(255, 255, 255));
-        jLabel49.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel49.setText("CARD BALANCE");
+        lblCardBalance.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        lblCardBalance.setForeground(new java.awt.Color(255, 255, 255));
+        lblCardBalance.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        lblCardBalance.setText("CARD BALANCE");
 
         javax.swing.GroupLayout jPanel8Layout = new javax.swing.GroupLayout(jPanel8);
         jPanel8.setLayout(jPanel8Layout);
@@ -995,20 +1585,21 @@ public class MainJFrame extends javax.swing.JFrame {
             jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel8Layout.createSequentialGroup()
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(jLabel49, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(lblCardBalance, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(47, 47, 47))
         );
         jPanel8Layout.setVerticalGroup(
             jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel8Layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jLabel49, javax.swing.GroupLayout.DEFAULT_SIZE, 32, Short.MAX_VALUE)
+                .addComponent(lblCardBalance, javax.swing.GroupLayout.DEFAULT_SIZE, 32, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
+        txtCardBalance.setEditable(false);
         txtCardBalance.setFont(new java.awt.Font("Courier New", 1, 18)); // NOI18N
         txtCardBalance.setHorizontalAlignment(javax.swing.JTextField.CENTER);
-        txtCardBalance.setText("12.000.000 VND");
+        txtCardBalance.setText("100000000");
 
         jLabel50.setText("Current card's balance");
 
@@ -1062,26 +1653,31 @@ public class MainJFrame extends javax.swing.JFrame {
                 .addContainerGap())
         );
 
-        txtCurrentPIN.setFont(new java.awt.Font("Courier New", 1, 18)); // NOI18N
-        txtCurrentPIN.setHorizontalAlignment(javax.swing.JTextField.CENTER);
-        txtCurrentPIN.setText("******");
-
         jLabel47.setText("Current PIN");
 
         jLabel48.setText("New PIN");
-
-        txtNewPIN.setFont(new java.awt.Font("Courier New", 1, 18)); // NOI18N
-        txtNewPIN.setHorizontalAlignment(javax.swing.JTextField.CENTER);
-        txtNewPIN.setText("******");
-
-        txtRetypePIN.setFont(new java.awt.Font("Courier New", 1, 18)); // NOI18N
-        txtRetypePIN.setHorizontalAlignment(javax.swing.JTextField.CENTER);
-        txtRetypePIN.setText("******");
 
         jLabel52.setText("Re Enter PIN");
 
         btnSavePIN.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         btnSavePIN.setText("SAVE");
+        btnSavePIN.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnSavePINActionPerformed(evt);
+            }
+        });
+
+        txtCurrentPIN.setFont(new java.awt.Font("Courier New", 1, 18)); // NOI18N
+        txtCurrentPIN.setHorizontalAlignment(javax.swing.JTextField.CENTER);
+        txtCurrentPIN.setText("445566");
+
+        txtNewPIN.setFont(new java.awt.Font("Courier New", 1, 18)); // NOI18N
+        txtNewPIN.setHorizontalAlignment(javax.swing.JTextField.CENTER);
+        txtNewPIN.setText("445566");
+
+        txtRetypePIN.setFont(new java.awt.Font("Courier New", 1, 18)); // NOI18N
+        txtRetypePIN.setHorizontalAlignment(javax.swing.JTextField.CENTER);
+        txtRetypePIN.setText("445566");
 
         javax.swing.GroupLayout jPanel7Layout = new javax.swing.GroupLayout(jPanel7);
         jPanel7.setLayout(jPanel7Layout);
@@ -1093,12 +1689,12 @@ public class MainJFrame extends javax.swing.JFrame {
                     .addGroup(jPanel7Layout.createSequentialGroup()
                         .addGap(24, 24, 24)
                         .addGroup(jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(txtRetypePIN, javax.swing.GroupLayout.PREFERRED_SIZE, 265, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(jLabel52, javax.swing.GroupLayout.PREFERRED_SIZE, 107, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(txtNewPIN, javax.swing.GroupLayout.PREFERRED_SIZE, 265, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(jLabel48, javax.swing.GroupLayout.PREFERRED_SIZE, 107, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jLabel47, javax.swing.GroupLayout.PREFERRED_SIZE, 107, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(txtCurrentPIN, javax.swing.GroupLayout.PREFERRED_SIZE, 265, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel47, javax.swing.GroupLayout.PREFERRED_SIZE, 107, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                            .addComponent(txtNewPIN, javax.swing.GroupLayout.PREFERRED_SIZE, 265, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(txtRetypePIN, javax.swing.GroupLayout.PREFERRED_SIZE, 265, javax.swing.GroupLayout.PREFERRED_SIZE)))
                     .addGroup(jPanel7Layout.createSequentialGroup()
                         .addGap(77, 77, 77)
                         .addComponent(btnSavePIN, javax.swing.GroupLayout.PREFERRED_SIZE, 168, javax.swing.GroupLayout.PREFERRED_SIZE)))
@@ -1116,7 +1712,7 @@ public class MainJFrame extends javax.swing.JFrame {
                 .addComponent(jLabel48)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(txtNewPIN, javax.swing.GroupLayout.PREFERRED_SIZE, 38, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGap(12, 12, 12)
                 .addComponent(jLabel52)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(txtRetypePIN, javax.swing.GroupLayout.PREFERRED_SIZE, 38, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -1259,6 +1855,7 @@ public class MainJFrame extends javax.swing.JFrame {
         pnlHomeSection.setVisible(false);
         pnlTransferSection.setVisible(false);
         pnlAccountSection.setVisible(true);
+        pnlCardSection.setVisible(false);
     }//GEN-LAST:event_pnlAccountMouseClicked
 
     private void pnlAccountMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_pnlAccountMouseEntered
@@ -1301,9 +1898,84 @@ public class MainJFrame extends javax.swing.JFrame {
         new addMoneyJDialog(this, rootPaneCheckingEnabled).setVisible(true);
     }//GEN-LAST:event_lblAddMoneyMouseClicked
 
-    private void cboCardNameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cboCardNameActionPerformed
+    private void btnSavePINActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSavePINActionPerformed
+        changePIN();
+    }//GEN-LAST:event_btnSavePINActionPerformed
+
+    private void cboCardNamesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cboCardNamesActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_cboCardNameActionPerformed
+    }//GEN-LAST:event_cboCardNamesActionPerformed
+
+    private void btnNextActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnNextActionPerformed
+        if (this.cardTableRow < tblCardList.getRowCount() - 1) {
+            cardTableRow++;
+            this.displayClickedCard();
+        }
+    }//GEN-LAST:event_btnNextActionPerformed
+
+    private void btnPrevActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPrevActionPerformed
+        if (this.cardTableRow > 0) {
+            cardTableRow--;
+            this.displayClickedCard();
+        }
+    }//GEN-LAST:event_btnPrevActionPerformed
+
+    private void tblCardListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tblCardListMouseClicked
+        if (evt.getClickCount() == 2) {
+            this.cardTableRow = tblCardList.getSelectedRow();
+            this.displayClickedCard();
+        }
+    }//GEN-LAST:event_tblCardListMouseClicked
+
+    private void lblAddNewMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_lblAddNewMouseClicked
+        openAddCardDialog();
+    }//GEN-LAST:event_lblAddNewMouseClicked
+
+    private void lblAddNewMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_lblAddNewMouseEntered
+        JLabel label = (JLabel) evt.getSource();
+        label.setForeground(new Color(204, 255, 102));
+    }//GEN-LAST:event_lblAddNewMouseEntered
+
+    private void lblAddNewMouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_lblAddNewMouseExited
+        JLabel label = (JLabel) evt.getSource();
+        label.setForeground(new Color(0, 255, 0));
+    }//GEN-LAST:event_lblAddNewMouseExited
+
+    private void lblRemoveCardMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_lblRemoveCardMouseClicked
+        deleteCard();
+    }//GEN-LAST:event_lblRemoveCardMouseClicked
+
+    private void btnTransferActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnTransferActionPerformed
+        transferMoney();
+    }//GEN-LAST:event_btnTransferActionPerformed
+
+    private void lblPhotoMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_lblPhotoMouseClicked
+        choosePhoto();
+    }//GEN-LAST:event_lblPhotoMouseClicked
+
+    private void btnEditActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEditActionPerformed
+        updateEditable();
+    }//GEN-LAST:event_btnEditActionPerformed
+
+    private void btnUpdateActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnUpdateActionPerformed
+        updateUserDetail();
+    }//GEN-LAST:event_btnUpdateActionPerformed
+
+    private void txtAmountKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtAmountKeyTyped
+        restrictNumericValueOnly(evt, txtAmount);
+    }//GEN-LAST:event_txtAmountKeyTyped
+
+    private void cboCardsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cboCardsActionPerformed
+        fillCard();
+    }//GEN-LAST:event_cboCardsActionPerformed
+
+    private void btnPDFActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPDFActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_btnPDFActionPerformed
+
+    private void btnExcelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnExcelActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_btnExcelActionPerformed
 
     /**
      * @param args the command line arguments
@@ -1322,13 +1994,17 @@ public class MainJFrame extends javax.swing.JFrame {
                 }
             }
         } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(MainJFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(MainJFrame.class
+                    .getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(MainJFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(MainJFrame.class
+                    .getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(MainJFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(MainJFrame.class
+                    .getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(MainJFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(MainJFrame.class
+                    .getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
         //</editor-fold>
         FlatLightLaf.setup();
@@ -1348,14 +2024,16 @@ public class MainJFrame extends javax.swing.JFrame {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel MainJPanel;
     private javax.swing.JButton btnEdit;
+    private javax.swing.JButton btnExcel;
     private javax.swing.JButton btnNext;
+    private javax.swing.JButton btnPDF;
     private javax.swing.JButton btnPrev;
     private javax.swing.JButton btnSave;
     private javax.swing.JButton btnSavePIN;
     private javax.swing.JButton btnTransfer;
     private javax.swing.JButton btnTransferMoney;
     private javax.swing.JButton btnUpdate;
-    private javax.swing.JComboBox<String> cboCardName;
+    private javax.swing.JComboBox<String> cboCardNames;
     private javax.swing.JComboBox<String> cboCards;
     private javax.swing.ButtonGroup genderGroup;
     private javax.swing.JLabel jLabel1;
@@ -1368,7 +2046,6 @@ public class MainJFrame extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel21;
     private javax.swing.JLabel jLabel23;
     private javax.swing.JLabel jLabel25;
-    private javax.swing.JLabel jLabel26;
     private javax.swing.JLabel jLabel27;
     private javax.swing.JLabel jLabel29;
     private javax.swing.JLabel jLabel3;
@@ -1382,15 +2059,13 @@ public class MainJFrame extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel38;
     private javax.swing.JLabel jLabel39;
     private javax.swing.JLabel jLabel4;
-    private javax.swing.JLabel jLabel40;
     private javax.swing.JLabel jLabel41;
     private javax.swing.JLabel jLabel42;
-    private javax.swing.JLabel jLabel43;
     private javax.swing.JLabel jLabel44;
     private javax.swing.JLabel jLabel45;
+    private javax.swing.JLabel jLabel46;
     private javax.swing.JLabel jLabel47;
     private javax.swing.JLabel jLabel48;
-    private javax.swing.JLabel jLabel49;
     private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel50;
     private javax.swing.JLabel jLabel51;
@@ -1400,6 +2075,7 @@ public class MainJFrame extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel8;
     private javax.swing.JLabel jLabel9;
     private javax.swing.JPanel jPanel1;
+    private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel4;
     private javax.swing.JPanel jPanel6;
     private javax.swing.JPanel jPanel7;
@@ -1407,22 +2083,27 @@ public class MainJFrame extends javax.swing.JFrame {
     private javax.swing.JPanel jPanel9;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JScrollPane jScrollPane3;
+    private javax.swing.JLabel lblATMCardName;
+    private javax.swing.JLabel lblATMCardNumber;
+    private javax.swing.JLabel lblATMExpiry;
+    private javax.swing.JLabel lblATMHolderName;
     private javax.swing.JLabel lblAccountInfoTitle;
     private javax.swing.JLabel lblAddMoney;
     private javax.swing.JLabel lblAddNew;
-    private javax.swing.JLabel lblCVVNum;
-    private javax.swing.JLabel lblCVVNum1;
+    private javax.swing.JLabel lblBalance;
     private javax.swing.JLabel lblCVVTitle;
     private javax.swing.JLabel lblCVVTitle1;
-    private javax.swing.JLabel lblCardName;
-    private javax.swing.JLabel lblCardName1;
+    private javax.swing.JLabel lblCardBalance;
+    private javax.swing.JLabel lblCardHolder;
+    private javax.swing.JLabel lblCardID;
     private javax.swing.JLabel lblCardNumber;
-    private javax.swing.JLabel lblCardNumber1;
-    private javax.swing.JLabel lblCardOrder;
+    private javax.swing.JLabel lblCardOrder1;
     private javax.swing.JLabel lblCardSection;
     private javax.swing.JLabel lblCardSection2;
-    private javax.swing.JLabel lblCardVietelPay;
-    private javax.swing.JLabel lblCardVietelPay1;
+    private javax.swing.JLabel lblCardname;
+    private javax.swing.JLabel lblCurrentOmegaBalance;
+    private javax.swing.JLabel lblExpiry;
     private javax.swing.JLabel lblLastTransaction;
     private javax.swing.JLabel lblOmegaBalance;
     private javax.swing.JLabel lblOmegaPayTitle;
@@ -1437,6 +2118,7 @@ public class MainJFrame extends javax.swing.JFrame {
     private javax.swing.JPanel pnlCard;
     private javax.swing.JPanel pnlCard2;
     private javax.swing.JPanel pnlCardDetail;
+    private javax.swing.JPanel pnlCardDetail1;
     private javax.swing.JPanel pnlCardSection;
     private javax.swing.JPanel pnlHome;
     private javax.swing.JPanel pnlHomeSection;
@@ -1449,7 +2131,9 @@ public class MainJFrame extends javax.swing.JFrame {
     private javax.swing.JRadioButton rdoFemale;
     private javax.swing.JRadioButton rdoMale;
     private javax.swing.JPanel rightJPanel;
+    private javax.swing.JTabbedPane tabCard;
     private javax.swing.JTabbedPane tabTransfer;
+    private javax.swing.JTable tblCardList;
     private javax.swing.JTable tblLastTransaction;
     private javax.swing.JTextField txtAddress;
     private javax.swing.JTextField txtAmount;
@@ -1458,18 +2142,18 @@ public class MainJFrame extends javax.swing.JFrame {
     private javax.swing.JTextField txtCardBalance;
     private javax.swing.JTextField txtCardHolder;
     private javax.swing.JTextField txtCardNumber;
-    private javax.swing.JTextField txtCurrentPIN;
+    private javax.swing.JPasswordField txtCurrentPIN;
     private javax.swing.JTextField txtDayCreated;
     private javax.swing.JTextField txtEmail;
     private javax.swing.JTextField txtExpirationDate;
     private javax.swing.JTextField txtFirstname;
     private javax.swing.JTextField txtLastname;
-    private javax.swing.JTextField txtNewPIN;
+    private javax.swing.JPasswordField txtNewPIN;
     private javax.swing.JTextArea txtNote;
     private javax.swing.JTextField txtOmegaAccount;
     private javax.swing.JTextField txtOmegaBalance;
     private javax.swing.JTextField txtPhone;
-    private javax.swing.JTextField txtRetypePIN;
+    private javax.swing.JPasswordField txtRetypePIN;
     private javax.swing.JTextField txtStatus;
     private javax.swing.JTextField txtToAccount;
     // End of variables declaration//GEN-END:variables

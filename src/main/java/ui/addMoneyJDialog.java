@@ -6,6 +6,18 @@
 package ui;
 
 import com.formdev.flatlaf.FlatLightLaf;
+import dao.CardDAO;
+import dao.TransactionDAO;
+import dao.UserDetailDAO;
+import entity.Card;
+import entity.User_Detail;
+import helper.AuthUser;
+import helper.MsgHelper;
+import helper.UtilityHelper;
+import java.awt.event.KeyEvent;
+import java.util.List;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.JTextField;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
@@ -15,14 +27,89 @@ import javax.swing.UnsupportedLookAndFeelException;
  */
 public class addMoneyJDialog extends javax.swing.JDialog {
 
+    MainJFrame mainJFrame;
+    CardDAO cardDAO = new CardDAO();
+    TransactionDAO transDAO = new TransactionDAO();
+    UserDetailDAO detailDAO = new UserDetailDAO();
+
     /**
      * Creates new form addMoneyJDialog
      */
-    public addMoneyJDialog(java.awt.Frame parent, boolean modal) {
+    public addMoneyJDialog(MainJFrame parent, boolean modal) {
         super(parent, modal);
         initComponents();
+        mainJFrame = parent;
+        initAddMoneyJDialog();
         setLocationRelativeTo(null);
         setTitle("Deposit");
+    }
+
+    private void initAddMoneyJDialog() {
+        User_Detail userDetail = detailDAO.selectByID(AuthUser.user.getOmegaAccount());
+        lblOmegaBalance.setText(UtilityHelper.toVND(userDetail.getOmegaBalance()));
+        fillCardsCombobox();
+    }
+
+    private void restrictNumericValueOnly(KeyEvent ke, JTextField txt) {
+        if (!Character.isDigit(ke.getKeyChar())) {
+            txt.setText("");
+        }
+    }
+
+    private void fillCardsCombobox() {
+        DefaultComboBoxModel model = (DefaultComboBoxModel) cboCards.getModel();
+        model.removeAllElements();
+        List<Card> list = cardDAO.selectByOmegaAccount(AuthUser.user.getOmegaAccount());
+        if (list != null) {
+            for (Card e : list) {
+                model.addElement(e.getCardID());
+            }
+        }
+    }
+
+    private void addVND(float amount) {
+        txtMoneyAmount.setText(String.format("%.0f", amount));
+    }
+
+    private boolean isAddMoneyFormValid() {
+        boolean isValid = true;
+        if (cboCards.getItemCount() != 0) {
+            float depositAmount = UtilityHelper.toFloat(txtMoneyAmount.getText());
+            float cardBalance = UtilityHelper.toFloat(lblCardBalance.getToolTipText());
+            if (depositAmount < 50000) {
+                MsgHelper.alert(this, "Minimum deposit is 50.000 VND!");
+                isValid = false;
+            } else if (depositAmount > cardBalance) {
+                MsgHelper.alert(this, "Card balance is not enough!");
+                isValid = false;
+            }
+        } else {
+            MsgHelper.alert(this, "You haven't linked any card yet!");
+            isValid = false;
+        }
+        return isValid;
+    }
+
+    private void updateBalancesAfterDeposit(float amount) {
+        Card card = cardDAO.selectByID((Integer) cboCards.getSelectedItem());
+        User_Detail user = detailDAO.selectByID(AuthUser.user.getOmegaAccount());
+        //temporarily save both card and omega balance to 2 variables
+        float cardBalance = card.getCardBalance();
+        float omegaBalance = user.getOmegaBalance();
+        //Add and subtract deposit amount
+        user.setOmegaBalance(omegaBalance + amount);
+        card.setCardBalance(cardBalance - amount);
+        //update to the database
+        detailDAO.updateBalance(user);
+        cardDAO.updateBalance(card);
+    }
+
+    private void deposit() {
+        if (isAddMoneyFormValid()) {
+            updateBalancesAfterDeposit(UtilityHelper.toFloat(txtMoneyAmount.getText()));
+            initAddMoneyJDialog();
+            MsgHelper.alert(this, "Deposit successfully");
+        }
     }
 
     /**
@@ -38,16 +125,17 @@ public class addMoneyJDialog extends javax.swing.JDialog {
         pnlUp = new javax.swing.JPanel();
         lblDepositTitle = new javax.swing.JLabel();
         pnlDown = new javax.swing.JPanel();
-        jTextField1 = new javax.swing.JTextField();
-        jButton1 = new javax.swing.JButton();
-        jButton2 = new javax.swing.JButton();
-        jButton3 = new javax.swing.JButton();
+        txtMoneyAmount = new javax.swing.JTextField();
+        btn100VND = new javax.swing.JButton();
+        btn200VND = new javax.swing.JButton();
+        btn1trVND = new javax.swing.JButton();
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
-        jLabel3 = new javax.swing.JLabel();
+        lblOmegaBalance = new javax.swing.JLabel();
         jLabel4 = new javax.swing.JLabel();
-        jComboBox1 = new javax.swing.JComboBox<>();
-        jButton4 = new javax.swing.JButton();
+        cboCards = new javax.swing.JComboBox<>();
+        btnDeposit = new javax.swing.JButton();
+        lblCardBalance = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
@@ -83,63 +171,106 @@ public class addMoneyJDialog extends javax.swing.JDialog {
 
         pnlDown.setBackground(new java.awt.Color(255, 255, 255));
 
-        jTextField1.setFont(new java.awt.Font("Arial", 1, 14)); // NOI18N
-        jTextField1.setText("0 VND");
+        txtMoneyAmount.setFont(new java.awt.Font("Arial", 1, 14)); // NOI18N
+        txtMoneyAmount.setText("0 VND");
+        txtMoneyAmount.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                txtMoneyAmountKeyReleased(evt);
+            }
+        });
 
-        jButton1.setText("100.000 VND");
+        btn100VND.setText("100.000 VND");
+        btn100VND.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btn100VNDActionPerformed(evt);
+            }
+        });
 
-        jButton2.setText("200.000 VND");
+        btn200VND.setText("200.000 VND");
+        btn200VND.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btn200VNDActionPerformed(evt);
+            }
+        });
 
-        jButton3.setText("1.000.000 VND");
+        btn1trVND.setText("1.000.000 VND");
+        btn1trVND.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btn1trVNDActionPerformed(evt);
+            }
+        });
 
         jLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/icon/omegaSmall.png"))); // NOI18N
 
         jLabel2.setFont(new java.awt.Font("Arial", 1, 14)); // NOI18N
         jLabel2.setText("Account balance");
 
-        jLabel3.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        jLabel3.setText("308.000 VND");
+        lblOmegaBalance.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        lblOmegaBalance.setForeground(new java.awt.Color(51, 255, 51));
+        lblOmegaBalance.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        lblOmegaBalance.setText("308.000 VND");
 
         jLabel4.setFont(new java.awt.Font("Arial", 1, 14)); // NOI18N
-        jLabel4.setText("Source:");
+        jLabel4.setText("Card source:");
 
-        jComboBox1.setFont(new java.awt.Font("Courier New", 0, 14)); // NOI18N
-        jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "CARD 1", "CARD 2", "CARD 3", "CARD 4" }));
+        cboCards.setFont(new java.awt.Font("Courier New", 0, 14)); // NOI18N
+        cboCards.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "CARD 1", "CARD 2", "CARD 3", "CARD 4" }));
+        cboCards.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cboCardsActionPerformed(evt);
+            }
+        });
 
-        jButton4.setBackground(new java.awt.Color(238, 0, 51));
-        jButton4.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
-        jButton4.setForeground(new java.awt.Color(255, 255, 255));
-        jButton4.setText("DEPOSIT");
+        btnDeposit.setBackground(new java.awt.Color(238, 0, 51));
+        btnDeposit.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        btnDeposit.setForeground(new java.awt.Color(255, 255, 255));
+        btnDeposit.setText("DEPOSIT");
+        btnDeposit.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnDepositActionPerformed(evt);
+            }
+        });
+
+        lblCardBalance.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        lblCardBalance.setForeground(new java.awt.Color(51, 255, 51));
+        lblCardBalance.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        lblCardBalance.setText("50.000 VND");
 
         javax.swing.GroupLayout pnlDownLayout = new javax.swing.GroupLayout(pnlDown);
         pnlDown.setLayout(pnlDownLayout);
         pnlDownLayout.setHorizontalGroup(
             pnlDownLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, pnlDownLayout.createSequentialGroup()
-                .addContainerGap(33, Short.MAX_VALUE)
+                .addContainerGap(32, Short.MAX_VALUE)
                 .addGroup(pnlDownLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addGroup(pnlDownLayout.createSequentialGroup()
                         .addGap(1, 1, 1)
-                        .addGroup(pnlDownLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 375, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addGroup(pnlDownLayout.createSequentialGroup()
-                                .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 124, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                .addComponent(jButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 113, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                .addComponent(jButton3, javax.swing.GroupLayout.PREFERRED_SIZE, 114, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGroup(pnlDownLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(txtMoneyAmount, javax.swing.GroupLayout.PREFERRED_SIZE, 375, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addGroup(pnlDownLayout.createSequentialGroup()
                                 .addComponent(jLabel1)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 125, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 121, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                    .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 68, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, 376, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addComponent(lblOmegaBalance, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addGroup(pnlDownLayout.createSequentialGroup()
+                                .addGroup(pnlDownLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                                    .addComponent(jLabel4, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 125, Short.MAX_VALUE)
+                                    .addComponent(btn100VND, javax.swing.GroupLayout.PREFERRED_SIZE, 124, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addGroup(pnlDownLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addGroup(pnlDownLayout.createSequentialGroup()
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                        .addComponent(btn200VND, javax.swing.GroupLayout.PREFERRED_SIZE, 113, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                        .addComponent(btn1trVND, javax.swing.GroupLayout.PREFERRED_SIZE, 114, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                    .addGroup(pnlDownLayout.createSequentialGroup()
+                                        .addGap(54, 54, 54)
+                                        .addComponent(lblCardBalance, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))))
+                    .addComponent(cboCards, javax.swing.GroupLayout.PREFERRED_SIZE, 376, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(25, 25, 25))
             .addGroup(pnlDownLayout.createSequentialGroup()
                 .addGap(138, 138, 138)
-                .addComponent(jButton4, javax.swing.GroupLayout.PREFERRED_SIZE, 143, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(btnDeposit, javax.swing.GroupLayout.PREFERRED_SIZE, 143, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         pnlDownLayout.setVerticalGroup(
@@ -151,21 +282,23 @@ public class addMoneyJDialog extends javax.swing.JDialog {
                         .addGap(13, 13, 13)
                         .addGroup(pnlDownLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                            .addComponent(lblOmegaBalance, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE)))
                     .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(txtMoneyAmount, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(12, 12, 12)
                 .addGroup(pnlDownLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jButton1)
-                    .addComponent(jButton2)
-                    .addComponent(jButton3))
-                .addGap(56, 56, 56)
-                .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btn100VND)
+                    .addComponent(btn200VND)
+                    .addComponent(btn1trVND))
+                .addGap(55, 55, 55)
+                .addGroup(pnlDownLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(lblCardBalance, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, 48, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(cboCards, javax.swing.GroupLayout.PREFERRED_SIZE, 48, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 39, Short.MAX_VALUE)
-                .addComponent(jButton4, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(btnDeposit, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(32, 32, 32))
         );
 
@@ -197,6 +330,37 @@ public class addMoneyJDialog extends javax.swing.JDialog {
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
+
+    private void btn100VNDActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn100VNDActionPerformed
+//        addVND(100000);
+    }//GEN-LAST:event_btn100VNDActionPerformed
+
+    private void btn200VNDActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn200VNDActionPerformed
+//        addVND(200000);
+    }//GEN-LAST:event_btn200VNDActionPerformed
+
+    private void btn1trVNDActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn1trVNDActionPerformed
+//        addVND(1000000);
+    }//GEN-LAST:event_btn1trVNDActionPerformed
+
+    private void btnDepositActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDepositActionPerformed
+//        if (MsgHelper.confirm(this, "Do you want to deposit "
+//                + txtMoneyAmount.getText() + " VND from CardID: " + cboCards.getSelectedItem())) {
+//            deposit();
+//        }
+    }//GEN-LAST:event_btnDepositActionPerformed
+
+    private void txtMoneyAmountKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtMoneyAmountKeyReleased
+//        restrictNumericValueOnly(evt, txtMoneyAmount);
+    }//GEN-LAST:event_txtMoneyAmountKeyReleased
+
+    private void cboCardsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cboCardsActionPerformed
+        if (cboCards.getItemCount() != 0) {
+            Card card = cardDAO.selectByID((Integer) cboCards.getSelectedItem());
+            lblCardBalance.setText(UtilityHelper.toVND(card.getCardBalance()));
+            lblCardBalance.setToolTipText(String.valueOf(card.getCardBalance()));
+        }
+    }//GEN-LAST:event_cboCardsActionPerformed
 
     /**
      * @param args the command line arguments
@@ -233,7 +397,7 @@ public class addMoneyJDialog extends javax.swing.JDialog {
         /* Create and display the dialog */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                addMoneyJDialog dialog = new addMoneyJDialog(new javax.swing.JFrame(), true);
+                addMoneyJDialog dialog = new addMoneyJDialog(new MainJFrame(), true);
                 dialog.addWindowListener(new java.awt.event.WindowAdapter() {
                     @Override
                     public void windowClosing(java.awt.event.WindowEvent e) {
@@ -246,19 +410,20 @@ public class addMoneyJDialog extends javax.swing.JDialog {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton jButton1;
-    private javax.swing.JButton jButton2;
-    private javax.swing.JButton jButton3;
-    private javax.swing.JButton jButton4;
-    private javax.swing.JComboBox<String> jComboBox1;
+    private javax.swing.JButton btn100VND;
+    private javax.swing.JButton btn1trVND;
+    private javax.swing.JButton btn200VND;
+    private javax.swing.JButton btnDeposit;
+    private javax.swing.JComboBox<String> cboCards;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
-    private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
-    private javax.swing.JTextField jTextField1;
+    private javax.swing.JLabel lblCardBalance;
     private javax.swing.JLabel lblDepositTitle;
+    private javax.swing.JLabel lblOmegaBalance;
     private javax.swing.JPanel pnlDown;
     private javax.swing.JPanel pnlMain;
     private javax.swing.JPanel pnlUp;
+    private javax.swing.JTextField txtMoneyAmount;
     // End of variables declaration//GEN-END:variables
 }

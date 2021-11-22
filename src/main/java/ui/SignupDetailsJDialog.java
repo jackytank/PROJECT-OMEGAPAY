@@ -22,7 +22,7 @@ import javax.swing.UnsupportedLookAndFeelException;
  * @author balis
  */
 public class SignupDetailsJDialog extends javax.swing.JDialog {
-    
+
     UserDetailDAO userDetailDAO = new UserDetailDAO();
     static String omegaAccount;
 
@@ -36,19 +36,50 @@ public class SignupDetailsJDialog extends javax.swing.JDialog {
         initComponents();
         setLocationRelativeTo(parent);
     }
-    
+
     private void insert() {
-        User_Detail entity = getUserDetailForm();
-        userDetailDAO.insert(entity);
-        MsgHelper.alert(this, "Insert successfully!");
-        this.dispose();
-        new LoginJFrame().setVisible(true);
+        if (isSignupFormValid()) {
+            User_Detail entity = getUserDetailForm();
+            userDetailDAO.insert(entity);
+            MsgHelper.alert(this, "Insert successfully!");
+            this.dispose();
+            new LoginJFrame().setVisible(true);
+        }
     }
-    
-    private void isSignupFormValid() {
-        
+
+    private boolean isSignupFormValid() {
+        boolean isValid = true;
+        String error = "";
+        if (txtFirstname.getText().equals("")) {
+            error += "First name can not be empty!\n";
+            isValid = false;
+        }
+        if (txtLastname.getText().equals("")) {
+            error += "Last name can not be empty!\n";
+            isValid = false;
+        }
+        if (!txtEmail.getText().matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
+            error += "Email is invalid!\n";
+            isValid = false;
+        }
+        if (txtPhone.getText().length() < 10) {
+            error += "Phone must have the length of 10!\n";
+            isValid = false;
+        }
+        if (txtBirthday.getDate() == null) {
+            error += "Birthday is invalid!\n";
+            isValid = false;
+        }
+        if (txtAddress.getText().equals("")) {
+            error += "Address can not be empty!\n";
+            isValid = false;
+        }
+        if (!error.equals("")) {
+            MsgHelper.alert(this, error);
+        }
+        return isValid;
     }
-    
+
     private User_Detail getUserDetailForm() {
         User_Detail userDetail = new User_Detail();
         userDetail.setOmegaAccount(omegaAccount);
@@ -68,7 +99,7 @@ public class SignupDetailsJDialog extends javax.swing.JDialog {
         userDetail.setPhoto(lblPhoto.getToolTipText());
         return userDetail;
     }
-    
+
     private void choosePhoto() {
         JFileChooser chooser = new JFileChooser(System.getProperty("user.home") + "/Desktop");
         if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
@@ -79,7 +110,7 @@ public class SignupDetailsJDialog extends javax.swing.JDialog {
             lblPhoto.setIcon(icon);
         }
     }
-    
+
     private void openMain() {
         new MainJFrame().setVisible(true);
     }

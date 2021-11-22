@@ -20,7 +20,7 @@ public class CardDAO extends OmegaPayDAO<Card, Integer> {
 
     String INSERT_SQL = "INSERT INTO Card(OmegaAccount, CardNumber, PIN, ExpirationDate, "
             + "CardHolderName, BillingAddress, CardBalance, CardName) VALUES(?,?,?,?,?,?,?,?)";
-    String UPDATE_CARD_SQL = "UPDATE Card SET  WHERE CardID=?";
+    String UPDATE_CARD_BALANCE_SQL = "UPDATE Card SET CardBalance=? WHERE CardID=?";
     String UPDATE_PIN_SQL = "UPDATE Card SET PIN=? WHERE CardID=?";
     String DELETE_SQL = "DELETE FROM Card WHERE CardID=?";
     String SELECT_ALL_SQL = "SELECT * FROM Card";
@@ -43,6 +43,12 @@ public class CardDAO extends OmegaPayDAO<Card, Integer> {
     @Override
     public void update(Card entity) {
 
+    }
+
+    public void updateBalance(Card entity) {
+        JDBCHelper.executeUpdate(UPDATE_CARD_BALANCE_SQL,
+                entity.getCardBalance(),
+                entity.getCardID());
     }
 
     public void updatePIN(Card entity) {

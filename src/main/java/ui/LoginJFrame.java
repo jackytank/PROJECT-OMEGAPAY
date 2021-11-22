@@ -10,10 +10,12 @@ import dao.UserLoginDAO;
 import entity.User_Login;
 import helper.AuthUser;
 import helper.MsgHelper;
+import java.awt.Color;
 import java.awt.event.KeyEvent;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import java.util.Random;
+import javax.swing.JLabel;
 
 /**
  *
@@ -112,6 +114,7 @@ public class LoginJFrame extends javax.swing.JFrame {
         chkShowPass = new javax.swing.JCheckBox();
         lblWelcomeback = new javax.swing.JLabel();
         jSeparator1 = new javax.swing.JSeparator();
+        jLabel3 = new javax.swing.JLabel();
         pnlSignupSection = new javax.swing.JPanel();
         txtUserSignup = new javax.swing.JTextField();
         txtRetypeSignup = new javax.swing.JPasswordField();
@@ -188,13 +191,28 @@ public class LoginJFrame extends javax.swing.JFrame {
         pnlSigninSection.add(lblWelcomeback, new org.netbeans.lib.awtextra.AbsoluteConstraints(140, 100, 330, 33));
         pnlSigninSection.add(jSeparator1, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 140, 250, 20));
 
+        jLabel3.setFont(new java.awt.Font("Segoe UI", 2, 13)); // NOI18N
+        jLabel3.setForeground(new java.awt.Color(0, 255, 0));
+        jLabel3.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        jLabel3.setText("Forgot password?");
+        jLabel3.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jLabel3MouseClicked(evt);
+            }
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                jLabel3MouseEntered(evt);
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                jLabel3MouseExited(evt);
+            }
+        });
+        pnlSigninSection.add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(360, 390, 110, -1));
+
         pnlLeft.add(pnlSigninSection, "card2");
 
         pnlSignupSection.setBackground(new java.awt.Color(255, 255, 255));
         pnlSignupSection.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
         pnlSignupSection.add(txtUserSignup, new org.netbeans.lib.awtextra.AbsoluteConstraints(140, 200, 326, 36));
-
-        txtRetypeSignup.setText("jPasswordField1");
         pnlSignupSection.add(txtRetypeSignup, new org.netbeans.lib.awtextra.AbsoluteConstraints(140, 340, 326, 36));
 
         jButton3.setBackground(new java.awt.Color(238, 0, 51));
@@ -227,8 +245,6 @@ public class LoginJFrame extends javax.swing.JFrame {
         jLabel14.setText("SIGN UP");
         pnlSignupSection.add(jLabel14, new org.netbeans.lib.awtextra.AbsoluteConstraints(140, 70, 330, 33));
         pnlSignupSection.add(jSeparator2, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 110, 250, 20));
-
-        txtPassSignup.setText("jPasswordField1");
         pnlSignupSection.add(txtPassSignup, new org.netbeans.lib.awtextra.AbsoluteConstraints(140, 270, 326, 36));
 
         jLabel11.setText("Password");
@@ -469,6 +485,20 @@ public class LoginJFrame extends javax.swing.JFrame {
         new ChangePasswordJDialog(this, rootPaneCheckingEnabled).setVisible(true);
     }//GEN-LAST:event_pnlChangePasswordMouseClicked
 
+    private void jLabel3MouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel3MouseEntered
+        JLabel label = (JLabel) evt.getSource();
+        label.setForeground(new Color(204,255,0));
+    }//GEN-LAST:event_jLabel3MouseEntered
+
+    private void jLabel3MouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel3MouseExited
+        JLabel label = (JLabel) evt.getSource();
+        label.setForeground(new Color(102,255,102));
+    }//GEN-LAST:event_jLabel3MouseExited
+
+    private void jLabel3MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel3MouseClicked
+        new ForgotPasswordJDialog(this, rootPaneCheckingEnabled).setVisible(true);
+    }//GEN-LAST:event_jLabel3MouseClicked
+
     /**
      * @param args the command line arguments
      */
@@ -520,6 +550,7 @@ public class LoginJFrame extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel12;
     private javax.swing.JLabel jLabel14;
     private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel6;
     private javax.swing.JLabel jLabel9;
     private javax.swing.JSeparator jSeparator1;

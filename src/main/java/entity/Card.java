@@ -109,5 +109,4 @@ public class Card {
     public void setCardName(String cardName) {
         this.cardName = cardName;
     }
-
 }

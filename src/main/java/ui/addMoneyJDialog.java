@@ -108,6 +108,10 @@ public class addMoneyJDialog extends javax.swing.JDialog {
         if (isAddMoneyFormValid()) {
             updateBalancesAfterDeposit(UtilityHelper.toFloat(txtMoneyAmount.getText()));
             initAddMoneyJDialog();
+            mainJFrame.initCard();
+            mainJFrame.initDashboard();
+            mainJFrame.initAccount();
+            mainJFrame.initTransfer();
             MsgHelper.alert(this, "Deposit successfully");
         }
     }
@@ -332,26 +336,26 @@ public class addMoneyJDialog extends javax.swing.JDialog {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btn100VNDActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn100VNDActionPerformed
-//        addVND(100000);
+        addVND(100000);
     }//GEN-LAST:event_btn100VNDActionPerformed
 
     private void btn200VNDActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn200VNDActionPerformed
-//        addVND(200000);
+        addVND(200000);
     }//GEN-LAST:event_btn200VNDActionPerformed
 
     private void btn1trVNDActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn1trVNDActionPerformed
-//        addVND(1000000);
+        addVND(1000000);
     }//GEN-LAST:event_btn1trVNDActionPerformed
 
     private void btnDepositActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDepositActionPerformed
-//        if (MsgHelper.confirm(this, "Do you want to deposit "
-//                + txtMoneyAmount.getText() + " VND from CardID: " + cboCards.getSelectedItem())) {
-//            deposit();
-//        }
+        if (MsgHelper.confirm(this, "Do you want to deposit "
+                + txtMoneyAmount.getText() + " VND from CardID: " + cboCards.getSelectedItem())) {
+            deposit();
+        }
     }//GEN-LAST:event_btnDepositActionPerformed
 
     private void txtMoneyAmountKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtMoneyAmountKeyReleased
-//        restrictNumericValueOnly(evt, txtMoneyAmount);
+        restrictNumericValueOnly(evt, txtMoneyAmount);
     }//GEN-LAST:event_txtMoneyAmountKeyReleased
 
     private void cboCardsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cboCardsActionPerformed

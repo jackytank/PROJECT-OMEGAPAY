@@ -185,13 +185,13 @@ public class SignupDetailsJDialog extends javax.swing.JDialog {
         pnlDown.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
         lblPhoto.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        lblPhoto.setIcon(new javax.swing.ImageIcon(getClass().getResource("/photo/elonmusk.png"))); // NOI18N
+        lblPhoto.setBorder(javax.swing.BorderFactory.createEtchedBorder());
         lblPhoto.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 lblPhotoMouseClicked(evt);
             }
         });
-        pnlDown.add(lblPhoto, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 80, 126, -1));
+        pnlDown.add(lblPhoto, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 80, 126, 150));
 
         btnBrowse.setText("Browse");
         btnBrowse.addActionListener(new java.awt.event.ActionListener() {

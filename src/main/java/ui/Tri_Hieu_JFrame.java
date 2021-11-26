@@ -6,6 +6,18 @@
 package ui;
 
 import com.formdev.flatlaf.FlatLightLaf;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.WriterException;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.DocumentException;
+import com.itextpdf.text.Element;
+import com.itextpdf.text.Image;
+import com.itextpdf.text.Paragraph;
+import com.itextpdf.text.pdf.PdfWriter;
+import com.itextpdf.text.pdf.draw.LineSeparator;
 import dao.CardDAO;
 import dao.TransactionDAO;
 import dao.UserDetailDAO;
@@ -18,11 +30,18 @@ import helper.ImageHelper;
 import helper.MsgHelper;
 import helper.UtilityHelper;
 import java.awt.Color;
+import java.awt.Desktop;
+import java.awt.HeadlessException;
 import java.awt.event.KeyEvent;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
 import java.util.Date;
 import java.util.List;
+import java.util.Random;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -33,17 +52,18 @@ import javax.swing.JTextField;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.table.DefaultTableModel;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 /**
  *
  * @author balis
  */
-public class ExportExcel extends javax.swing.JFrame {
+public class Tri_Hieu_JFrame extends javax.swing.JFrame {
 
     CardDAO cardDAO = new CardDAO();
     TransactionDAO transDAO = new TransactionDAO();
@@ -52,10 +72,25 @@ public class ExportExcel extends javax.swing.JFrame {
     Object[] cardNames = {"Agribank", "Sacombank", "Techcombank", "MBBank"};
     int cardTableRow = -1;
 
-    /**
+    private final String receiptFile = System.getProperty("user.home") + "/Desktop/receipt.pdf";
+    private final String[] websites = new String[]{
+        "https://www.youtube.com/watch?v=dQw4w9WgXcQ&ab_channel=RickAstley",
+        "https://www.youtube.com/watch?v=GxM3wstBcD4&ab_channel=Trendnation",
+        "https://www.youtube.com/watch?v=sL1AUp8c8QQ&ab_channel=OfirShoham",
+        "https://www.youtube.com/watch?v=l01WQXJjO_A&ab_channel=XeTinht%E1%BA%BF",
+        "https://www.youtube.com/watch?v=d3y9e0BZkGU&ab_channel=%C4%90%C6%B0%E1%BB%9Dng2Chi%E1%BB%81u",
+        "https://www.youtube.com/watch?v=8GGW93DLC5c&ab_channel=Matts",
+        "https://www.youtube.com/watch?v=B_ViNy2X5I8&ab_channel=OfirShoham"
+    };
+
+    private final com.itextpdf.text.Font courier20 = new com.itextpdf.text.Font(com.itextpdf.text.Font.FontFamily.COURIER, 20);
+    private final com.itextpdf.text.Font courier16 = new com.itextpdf.text.Font(com.itextpdf.text.Font.FontFamily.COURIER, 16);
+    private final com.itextpdf.text.Font courier12 = new com.itextpdf.text.Font(com.itextpdf.text.Font.FontFamily.COURIER, 12);
+
+    /*
      * Creates new form MainJFrame
      */
-    public ExportExcel() {
+    public Tri_Hieu_JFrame() {
         initComponents();
         setLocationRelativeTo(null);
         initDashboard();
@@ -66,7 +101,7 @@ public class ExportExcel extends javax.swing.JFrame {
     }
 
     //-------------------------- Dashboard Section ---------------------------
-    private void initDashboard() {
+    protected void initDashboard() {
         User_Detail user_Detail = detailDAO.selectByID(AuthUser.user.getOmegaAccount());
         fillCardsCombobox();
         fillTransactionTable();
@@ -129,8 +164,51 @@ public class ExportExcel extends javax.swing.JFrame {
         lblOmegaBalance.setText(UtilityHelper.toVND(user.getOmegaBalance()));
     }
 
+    private void exportExcel() {
+        try {
+            JFileChooser jfc = new JFileChooser(System.getProperty("user.home") + "/Desktop");
+            jfc.showSaveDialog(this);
+            File saveFile = jfc.getSelectedFile();
+            if (saveFile != null) {
+                saveFile = new File(saveFile.toString() + ".xlsx");
+                Workbook wb = new HSSFWorkbook();
+                Sheet sheet = wb.createSheet("LastTransaction");
+                Font defaultFont = wb.createFont();
+                defaultFont.setBold(true);
+                Row rowCol = sheet.createRow(0);
+                for (int i = 0; i < tblLastTransaction.getColumnCount(); i++) {
+                    Cell cell = rowCol.createCell(i);
+                    cell.setCellValue(tblLastTransaction.getColumnName(i));
+                }
+                for (int j = 0; j < tblLastTransaction.getRowCount(); j++) {
+                    Row row = sheet.createRow(j + 1);
+                    for (int a = 0; a < tblLastTransaction.getColumnCount(); a++) {
+                        Cell cell = row.createCell(a);
+                        if (tblLastTransaction.getValueAt(j, a) != null) {
+                            cell.setCellValue(tblLastTransaction.getValueAt(j, a).toString());
+                        }
+                    }
+                }
+                FileOutputStream fos = new FileOutputStream(new File(saveFile.toString()));
+                wb.write(fos);
+                wb.close();
+                fos.close();
+                if (MsgHelper.confirm(this, "Export excel successfully! Do you want to open it?")) {
+                    Desktop desktop = Desktop.getDesktop();
+                    desktop.open(saveFile);
+                }
+            }
+        } catch (HeadlessException | IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void exportPDF() {
+
+    }
+
     //-------------------------- Card Section ---------------------------
-    private void initCard() {
+    protected void initCard() {
         fillCardComboBox();
         fillCardTable();
         clearCardForm();
@@ -173,7 +251,7 @@ public class ExportExcel extends javax.swing.JFrame {
         }
     }
 
-    public void fillCardTable() {
+    private void fillCardTable() {
         DefaultTableModel disableCellEdit = new DefaultTableModel() {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -266,7 +344,7 @@ public class ExportExcel extends javax.swing.JFrame {
     }
 
     //-------------------------- TransferSection ---------------------------
-    private void initTransfer() {
+    protected void initTransfer() {
         User_Detail userDetail = detailDAO.selectByID(AuthUser.user.getOmegaAccount());
         lblCurrentOmegaBalance.setText(UtilityHelper.toVND(userDetail.getOmegaBalance()));
     }
@@ -292,18 +370,16 @@ public class ExportExcel extends javax.swing.JFrame {
                 transDAO.insert(tran);
                 updateBalanceAfterTransfer(amount);
                 initTransfer();
-                clearTransferForm();
-                if (MsgHelper.confirm(this, "Transfer successfully! Do you want to print receipt?")) {
+                initDashboard();
+                initAccount();
+                if (MsgHelper.confirm(this, "Transfer successfully! Do you want to print and view receipt?")) {
                     printReceiptPDF();
+                    clearTransferForm();
                 }
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    private void printReceiptPDF() {
-        
     }
 
     private void restrictNumericValueOnly(KeyEvent ke, JTextField txt) {
@@ -342,8 +418,120 @@ public class ExportExcel extends javax.swing.JFrame {
         return tran;
     }
 
+    private void createNewFileIfNotExist(String fileStr) {
+        try {
+            File file = new File(fileStr);
+            if (file.exists()) {
+                file.delete();
+            } else {
+                file.createNewFile();
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void printReceiptPDF() {
+        try {
+            createNewFileIfNotExist(receiptFile);
+            Document document = new Document();
+            PdfWriter.getInstance(document, new FileOutputStream(receiptFile));
+            document.open();
+            //add title, content, footer
+            addTitle(document);
+            addContent(document);
+            addFooter(document);
+            document.close();
+
+            //openfile
+            Desktop desktop = Desktop.getDesktop();
+            desktop.open(new File(receiptFile));
+        } catch (DocumentException | FileNotFoundException e) {
+            throw new RuntimeException(e);
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    private void addTitle(Document document) throws DocumentException, IOException {
+        addEmptyLine(document, 1);
+        //Add OmegaPay logo to center
+        Image img = Image.getInstance("photo/omegaSmall.png");
+        img.setAlignment(Element.ALIGN_CENTER);
+        document.add(img);
+        //Add title to center
+        Paragraph title = new Paragraph("OMEGAPAY BANKING RECEIPT", courier20);
+        Paragraph currentDate = new Paragraph(String.valueOf(new Date()), courier12);
+        title.setAlignment(Element.ALIGN_CENTER);
+        currentDate.setAlignment(Element.ALIGN_CENTER);
+
+        document.add(title);
+        document.add(currentDate);
+        addEmptyLine(document, 2);
+        addDashLine(document);
+        addEmptyLine(document, 2);
+    }
+
+    private void addContent(Document document) throws DocumentException {
+        document.add(new Paragraph("Txn ID      : " + generateTxnID(), courier16));
+        addEmptyLine(document, 2);
+        document.add(new Paragraph("From Account: " + AuthUser.user.getOmegaAccount(), courier16));
+        addEmptyLine(document, 2);
+        document.add(new Paragraph("To Account  : " + txtToAccount.getText(), courier16));
+        addEmptyLine(document, 2);
+        document.add(new Paragraph("Amount      : " + txtAmount.getText() + " VND", courier16));
+        addEmptyLine(document, 2);
+        document.add(new Paragraph("Note        : " + txtNote.getText(), courier16));
+        addEmptyLine(document, 2);
+        addDashLine(document);
+    }
+
+    private void addFooter(Document document) throws DocumentException, IOException {
+        addEmptyLine(document, 1);
+        Paragraph paragraph = new Paragraph();
+        paragraph.setFont(courier16);
+        paragraph.setAlignment(Paragraph.ALIGN_CENTER);
+        paragraph.add("THANK YOU FOR USING OUR APP\n");
+        paragraph.add("FOR FURTHER INFORMATION SCAN THE QR CODE\n");
+        document.add(paragraph);
+        //add QR code image
+        createQRCode(websites[new Random().nextInt(websites.length)], 200, 200);
+        Image qrImage = Image.getInstance("photo/qrcode.png");
+        qrImage.setAlignment(Element.ALIGN_CENTER);
+        document.add(qrImage);
+    }
+
+    //method for adding linebreak
+    private void addEmptyLine(Document document, int number) throws DocumentException {
+        for (int i = 0; i < number; i++) {
+            document.add(new Paragraph("\n"));
+        }
+    }
+
+    private void addDashLine(Document document) throws DocumentException {
+        document.add(new LineSeparator());
+    }
+
+    private void createQRCode(String data, int height, int width) {
+        try {
+            QRCodeWriter qRCodeWriter = new QRCodeWriter();
+            BitMatrix matrix = qRCodeWriter.encode(data, BarcodeFormat.QR_CODE, width, height);
+            //Write to file
+            String outputFile = "photo/qrcode.png";
+            Path savePath = FileSystems.getDefault().getPath(outputFile);
+            MatrixToImageWriter.writeToPath(matrix, "PNG", savePath);
+        } catch (WriterException | IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    // generate random Txn ID with length 10
+    private String generateTxnID() {
+        return "" + (10000 + new Random().nextInt(90000)) + (10000 + new Random().nextInt(90000));
+    }
+
     //-------------------------- Account Section ---------------------------
-    private void initAccount() {
+    protected void initAccount() {
         User_Detail user_Detail = detailDAO.selectByID(AuthUser.user.getOmegaAccount());
         this.defaultEditable();
         this.setAccountForm(user_Detail);
@@ -473,38 +661,6 @@ public class ExportExcel extends javax.swing.JFrame {
         txtDayCreated.setEnabled(false);
         txtStatus.setEnabled(false);
     }
-    
-    private void exportExcel(){
-        try {
-            JFileChooser jfc = new JFileChooser();
-            jfc.showSaveDialog(this);
-            File saveFile = jfc.getSelectedFile();
-            if(saveFile!=null){
-                saveFile = new File(saveFile.toString()+".xlsx");
-                Workbook wb = new XSSFWorkbook();
-                Sheet sheet = wb.createSheet("LastTransaction");
-                Row rowCol = sheet.createRow(0);
-                for(int i=0;i<tblLastTransaction.getColumnCount();i++){
-                    Cell cell = rowCol.createCell(i);
-                    cell.setCellValue(tblLastTransaction.getColumnName(i));
-                }
-                for(int j=0;j<tblLastTransaction.getRowCount();j++){
-                    Row row = sheet.createRow(j);
-                    for(int a=0;a<tblLastTransaction.getColumnCount();a++){
-                        Cell cell = row.createCell(a);
-                        if(tblLastTransaction.getValueAt(j,a)!=null)
-                            cell.setCellValue(tblLastTransaction.getValueAt(j,a).toString());
-                    }
-                }
-                FileOutputStream fos = new FileOutputStream(new File(saveFile.toString()));
-                wb.write(fos);
-                wb.close();
-                fos.close();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -515,7 +671,6 @@ public class ExportExcel extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        genderGroup = new javax.swing.ButtonGroup();
         MainJPanel = new javax.swing.JPanel();
         leftJPanel = new javax.swing.JPanel();
         pnlHome = new javax.swing.JPanel();
@@ -906,8 +1061,8 @@ public class ExportExcel extends javax.swing.JFrame {
                         .addComponent(jLabel14, javax.swing.GroupLayout.PREFERRED_SIZE, 151, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(18, 18, 18)
                         .addComponent(lblAddMoney)
-                        .addGap(0, 0, Short.MAX_VALUE))
-                    .addComponent(lblOmegaBalance, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addGap(0, 7, Short.MAX_VALUE))
+                    .addComponent(lblOmegaBalance, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 244, Short.MAX_VALUE))
                 .addContainerGap())
         );
         jPanel1Layout.setVerticalGroup(
@@ -980,7 +1135,6 @@ public class ExportExcel extends javax.swing.JFrame {
         btnTransferMoney.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         btnTransferMoney.setForeground(new java.awt.Color(255, 255, 255));
         btnTransferMoney.setText("TRANSFER MONEY");
-        btnTransferMoney.setBorder(null);
         btnTransferMoney.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
                 btnTransferMoneyMouseEntered(evt);
@@ -1080,7 +1234,6 @@ public class ExportExcel extends javax.swing.JFrame {
         btnTransfer.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         btnTransfer.setForeground(new java.awt.Color(255, 255, 255));
         btnTransfer.setText("TRANSFER");
-        btnTransfer.setBorder(null);
         btnTransfer.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
                 btnTransferMouseEntered(evt);
@@ -1152,11 +1305,9 @@ public class ExportExcel extends javax.swing.JFrame {
 
         txtOmegaBalance.setText("304.000 VND");
 
-        genderGroup.add(rdoMale);
         rdoMale.setSelected(true);
         rdoMale.setText("Male");
 
-        genderGroup.add(rdoFemale);
         rdoFemale.setText("Female");
 
         txtBirthday.setDateFormatString("yyyy-MM-dd");
@@ -1293,8 +1444,9 @@ public class ExportExcel extends javax.swing.JFrame {
             }
         });
 
+        lblPhoto.setBackground(new java.awt.Color(255, 255, 255));
         lblPhoto.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        lblPhoto.setIcon(new javax.swing.ImageIcon(getClass().getResource("/photo/elonmusk.png"))); // NOI18N
+        lblPhoto.setBorder(javax.swing.BorderFactory.createEtchedBorder());
         lblPhoto.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 lblPhotoMouseClicked(evt);
@@ -1818,6 +1970,15 @@ public class ExportExcel extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    private void pnlHomeMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_pnlHomeMouseClicked
+        if (pnlHome == evt.getSource()) {
+            pnlHomeSection.setVisible(true);
+            pnlTransferSection.setVisible(false);
+            pnlAccountSection.setVisible(false);
+            pnlCardSection.setVisible(false);
+        }
+    }//GEN-LAST:event_pnlHomeMouseClicked
+
     private void pnlHomeMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_pnlHomeMouseEntered
         JPanel homeJPanel = (JPanel) evt.getSource();
         homeJPanel.setBackground(new Color(230, 230, 230));
@@ -1828,16 +1989,6 @@ public class ExportExcel extends javax.swing.JFrame {
         homeJPanel.setBackground(new Color(255, 255, 255));
     }//GEN-LAST:event_pnlHomeMouseExited
 
-    private void btnTransferMoneyMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_btnTransferMoneyMouseEntered
-        JButton b = (JButton) evt.getSource();
-        b.setBackground(new Color(0, 79, 153));
-    }//GEN-LAST:event_btnTransferMoneyMouseEntered
-
-    private void btnTransferMoneyMouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_btnTransferMoneyMouseExited
-        JButton b = (JButton) evt.getSource();
-        b.setBackground(new Color(0, 112, 186));
-    }//GEN-LAST:event_btnTransferMoneyMouseExited
-
     private void pnlTransferMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_pnlTransferMouseClicked
         if (pnlTransfer == evt.getSource()) {
             pnlHomeSection.setVisible(false);
@@ -1846,15 +1997,6 @@ public class ExportExcel extends javax.swing.JFrame {
             pnlCardSection.setVisible(false);
         }
     }//GEN-LAST:event_pnlTransferMouseClicked
-
-    private void pnlHomeMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_pnlHomeMouseClicked
-        if (pnlHome == evt.getSource()) {
-            pnlHomeSection.setVisible(true);
-            pnlTransferSection.setVisible(false);
-            pnlAccountSection.setVisible(false);
-            pnlCardSection.setVisible(false);
-        }
-    }//GEN-LAST:event_pnlHomeMouseClicked
 
     private void pnlTransferMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_pnlTransferMouseEntered
         JPanel homeJPanel = (JPanel) evt.getSource();
@@ -1865,29 +2007,6 @@ public class ExportExcel extends javax.swing.JFrame {
         JPanel homeJPanel = (JPanel) evt.getSource();
         homeJPanel.setBackground(new Color(255, 255, 255));
     }//GEN-LAST:event_pnlTransferMouseExited
-
-    private void btnTransferMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_btnTransferMouseEntered
-        // TODO add your handling code here:
-    }//GEN-LAST:event_btnTransferMouseEntered
-
-    private void btnTransferMouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_btnTransferMouseExited
-        // TODO add your handling code here:
-    }//GEN-LAST:event_btnTransferMouseExited
-
-    private void btnTransferMoneyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnTransferMoneyActionPerformed
-        pnlHomeSection.setVisible(false);
-        pnlTransferSection.setVisible(true);
-        pnlAccountSection.setVisible(false);
-        pnlCardSection.setVisible(false);
-    }//GEN-LAST:event_btnTransferMoneyActionPerformed
-
-    private void pnlCardMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_pnlCardMouseClicked
-        pnlHomeSection.setVisible(false);
-        pnlTransferSection.setVisible(false);
-        pnlAccountSection.setVisible(false);
-        pnlCardSection.setVisible(true);
-
-    }//GEN-LAST:event_pnlCardMouseClicked
 
     private void pnlAccountMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_pnlAccountMouseClicked
         pnlHomeSection.setVisible(false);
@@ -1906,6 +2025,23 @@ public class ExportExcel extends javax.swing.JFrame {
         homeJPanel.setBackground(new Color(255, 255, 255));
     }//GEN-LAST:event_pnlAccountMouseExited
 
+    private void pnlCardMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_pnlCardMouseClicked
+        pnlHomeSection.setVisible(false);
+        pnlTransferSection.setVisible(false);
+        pnlAccountSection.setVisible(false);
+        pnlCardSection.setVisible(true);
+    }//GEN-LAST:event_pnlCardMouseClicked
+
+    private void pnlCardMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_pnlCardMouseEntered
+        JPanel homeJPanel = (JPanel) evt.getSource();
+        homeJPanel.setBackground(new Color(230, 230, 230));
+    }//GEN-LAST:event_pnlCardMouseEntered
+
+    private void pnlCardMouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_pnlCardMouseExited
+        JPanel homeJPanel = (JPanel) evt.getSource();
+        homeJPanel.setBackground(new Color(255, 255, 255));
+    }//GEN-LAST:event_pnlCardMouseExited
+
     private void pnlLogoutMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_pnlLogoutMouseClicked
         AuthUser.clear();
         this.dispose();
@@ -1922,48 +2058,70 @@ public class ExportExcel extends javax.swing.JFrame {
         homeJPanel.setBackground(new Color(255, 255, 255));
     }//GEN-LAST:event_pnlLogoutMouseExited
 
-    private void pnlCardMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_pnlCardMouseEntered
-        JPanel homeJPanel = (JPanel) evt.getSource();
-        homeJPanel.setBackground(new Color(230, 230, 230));
-    }//GEN-LAST:event_pnlCardMouseEntered
-
-    private void pnlCardMouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_pnlCardMouseExited
-        JPanel homeJPanel = (JPanel) evt.getSource();
-        homeJPanel.setBackground(new Color(255, 255, 255));
-    }//GEN-LAST:event_pnlCardMouseExited
-
     private void lblAddMoneyMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_lblAddMoneyMouseClicked
         new addMoneyJDialog(this, rootPaneCheckingEnabled).setVisible(true);
     }//GEN-LAST:event_lblAddMoneyMouseClicked
 
-    private void btnSavePINActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSavePINActionPerformed
-        changePIN();
-    }//GEN-LAST:event_btnSavePINActionPerformed
+    private void btnTransferMoneyMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_btnTransferMoneyMouseEntered
+        JButton b = (JButton) evt.getSource();
+        b.setBackground(new Color(0, 79, 153));
+    }//GEN-LAST:event_btnTransferMoneyMouseEntered
+
+    private void btnTransferMoneyMouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_btnTransferMoneyMouseExited
+        JButton b = (JButton) evt.getSource();
+        b.setBackground(new Color(0, 112, 186));
+    }//GEN-LAST:event_btnTransferMoneyMouseExited
+
+    private void btnTransferMoneyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnTransferMoneyActionPerformed
+        pnlHomeSection.setVisible(false);
+        pnlTransferSection.setVisible(true);
+        pnlAccountSection.setVisible(false);
+        pnlCardSection.setVisible(false);
+    }//GEN-LAST:event_btnTransferMoneyActionPerformed
+
+    private void cboCardsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cboCardsActionPerformed
+        fillCard();
+    }//GEN-LAST:event_cboCardsActionPerformed
+
+    private void btnPDFActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPDFActionPerformed
+        exportPDF();
+    }//GEN-LAST:event_btnPDFActionPerformed
+
+    private void btnExcelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnExcelActionPerformed
+        exportExcel();
+    }//GEN-LAST:event_btnExcelActionPerformed
+
+    private void txtAmountKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtAmountKeyTyped
+        restrictNumericValueOnly(evt, txtAmount);
+    }//GEN-LAST:event_txtAmountKeyTyped
+
+    private void btnTransferMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_btnTransferMouseEntered
+        // TODO add your handling code here:
+    }//GEN-LAST:event_btnTransferMouseEntered
+
+    private void btnTransferMouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_btnTransferMouseExited
+        // TODO add your handling code here:
+    }//GEN-LAST:event_btnTransferMouseExited
+
+    private void btnTransferActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnTransferActionPerformed
+        transferMoney();
+    }//GEN-LAST:event_btnTransferActionPerformed
+
+    private void btnUpdateActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnUpdateActionPerformed
+        updateUserDetail();
+    }//GEN-LAST:event_btnUpdateActionPerformed
+
+    private void btnEditActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEditActionPerformed
+        updateEditable();
+    }//GEN-LAST:event_btnEditActionPerformed
+
+    private void lblPhotoMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_lblPhotoMouseClicked
+        choosePhoto();
+    }//GEN-LAST:event_lblPhotoMouseClicked
 
     private void cboCardNamesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cboCardNamesActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_cboCardNamesActionPerformed
-
-    private void btnNextActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnNextActionPerformed
-        if (this.cardTableRow < tblCardList.getRowCount() - 1) {
-            cardTableRow++;
-            this.displayClickedCard();
-        }
-    }//GEN-LAST:event_btnNextActionPerformed
-
-    private void btnPrevActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPrevActionPerformed
-        if (this.cardTableRow > 0) {
-            cardTableRow--;
-            this.displayClickedCard();
-        }
-    }//GEN-LAST:event_btnPrevActionPerformed
-
-    private void tblCardListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tblCardListMouseClicked
-        if (evt.getClickCount() == 2) {
-            this.cardTableRow = tblCardList.getSelectedRow();
-            this.displayClickedCard();
-        }
-    }//GEN-LAST:event_tblCardListMouseClicked
 
     private void lblAddNewMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_lblAddNewMouseClicked
         openAddCardDialog();
@@ -1983,38 +2141,30 @@ public class ExportExcel extends javax.swing.JFrame {
         deleteCard();
     }//GEN-LAST:event_lblRemoveCardMouseClicked
 
-    private void btnTransferActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnTransferActionPerformed
-        transferMoney();
-    }//GEN-LAST:event_btnTransferActionPerformed
+    private void btnPrevActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPrevActionPerformed
+        if (this.cardTableRow > 0) {
+            cardTableRow--;
+            this.displayClickedCard();
+        }
+    }//GEN-LAST:event_btnPrevActionPerformed
 
-    private void lblPhotoMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_lblPhotoMouseClicked
-        choosePhoto();
-    }//GEN-LAST:event_lblPhotoMouseClicked
+    private void btnNextActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnNextActionPerformed
+        if (this.cardTableRow < tblCardList.getRowCount() - 1) {
+            cardTableRow++;
+            this.displayClickedCard();
+        }
+    }//GEN-LAST:event_btnNextActionPerformed
 
-    private void btnEditActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEditActionPerformed
-        updateEditable();
-    }//GEN-LAST:event_btnEditActionPerformed
+    private void tblCardListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tblCardListMouseClicked
+        if (evt.getClickCount() == 2) {
+            this.cardTableRow = tblCardList.getSelectedRow();
+            this.displayClickedCard();
+        }
+    }//GEN-LAST:event_tblCardListMouseClicked
 
-    private void btnUpdateActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnUpdateActionPerformed
-        updateUserDetail();
-    }//GEN-LAST:event_btnUpdateActionPerformed
-
-    private void txtAmountKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtAmountKeyTyped
-        restrictNumericValueOnly(evt, txtAmount);
-    }//GEN-LAST:event_txtAmountKeyTyped
-
-    private void cboCardsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cboCardsActionPerformed
-        fillCard();
-    }//GEN-LAST:event_cboCardsActionPerformed
-
-    private void btnPDFActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPDFActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_btnPDFActionPerformed
-
-    private void btnExcelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnExcelActionPerformed
-        // TODO add your handling code here:
-        exportExcel();
-    }//GEN-LAST:event_btnExcelActionPerformed
+    private void btnSavePINActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSavePINActionPerformed
+        changePIN();
+    }//GEN-LAST:event_btnSavePINActionPerformed
 
     /**
      * @param args the command line arguments
@@ -2033,17 +2183,13 @@ public class ExportExcel extends javax.swing.JFrame {
                 }
             }
         } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(ExportExcel.class
-                    .getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(Tri_Hieu_JFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(ExportExcel.class
-                    .getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(Tri_Hieu_JFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(ExportExcel.class
-                    .getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(Tri_Hieu_JFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(ExportExcel.class
-                    .getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(Tri_Hieu_JFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
         //</editor-fold>
         FlatLightLaf.setup();
@@ -2055,7 +2201,7 @@ public class ExportExcel extends javax.swing.JFrame {
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                new ExportExcel().setVisible(true);
+                new Tri_Hieu_JFrame().setVisible(true);
             }
         });
     }
@@ -2074,7 +2220,6 @@ public class ExportExcel extends javax.swing.JFrame {
     private javax.swing.JButton btnUpdate;
     private javax.swing.JComboBox<String> cboCardNames;
     private javax.swing.JComboBox<String> cboCards;
-    private javax.swing.ButtonGroup genderGroup;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel13;

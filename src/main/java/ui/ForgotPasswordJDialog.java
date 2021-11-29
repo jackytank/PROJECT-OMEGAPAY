@@ -26,9 +26,9 @@ import javax.swing.UnsupportedLookAndFeelException;
  */
 public class ForgotPasswordJDialog extends javax.swing.JDialog {
 
-    public static final String ACCOUNT_SID = "AC275b4a4a2f977410633eecec0e8a3d9b";
+    public static final String ACCOUNT_SID = "";
 
-    public static final String AUTH_TOKEN = "f29411761bf6f9c179f6059e71a0b2fe";
+    public static final String AUTH_TOKEN = "";
 
     private String SMSCode, EmailCode;
 
@@ -72,7 +72,7 @@ public class ForgotPasswordJDialog extends javax.swing.JDialog {
             Twilio.init(ACCOUNT_SID, AUTH_TOKEN);
             Message message = Message.creator(
                     new PhoneNumber("+84" + txtPhoneSMS.getText()),
-                    new PhoneNumber("+19496768396"),
+                    new PhoneNumber(""),
                     "Your OmegaPay verification code is: " + SMSCode
             ).create();
             String userInput = MsgHelper.promptInput(this, "The verification code was sent to your phone, enter the code to continue..");

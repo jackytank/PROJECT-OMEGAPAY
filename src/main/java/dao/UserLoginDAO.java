@@ -45,10 +45,7 @@ public class UserLoginDAO extends OmegaPayDAO<User_Login, String> {
     @Override
     public User_Login selectByID(String username) {
         List<User_Login> list = this.selectBySQL(SELECT_BY_USERNAME_SQL, username);
-        if (list.isEmpty()) {
-            return null;
-        }
-        return list.get(0);
+        return list.isEmpty() ? null : list.get(0);
     }
 
     @Override

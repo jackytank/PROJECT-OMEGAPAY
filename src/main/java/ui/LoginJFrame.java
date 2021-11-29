@@ -48,6 +48,10 @@ public class LoginJFrame extends javax.swing.JFrame {
         }
     }
 
+    private void openForgotPasswordOptions() {
+        new EmailOrSMSJDialog(this, rootPaneCheckingEnabled).setVisible(true);
+    }
+
     //-------------- Sign up section -------------
     private void signup() {
         String username = txtUserSignup.getText();
@@ -487,16 +491,16 @@ public class LoginJFrame extends javax.swing.JFrame {
 
     private void jLabel3MouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel3MouseEntered
         JLabel label = (JLabel) evt.getSource();
-        label.setForeground(new Color(204,255,0));
+        label.setForeground(new Color(204, 255, 0));
     }//GEN-LAST:event_jLabel3MouseEntered
 
     private void jLabel3MouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel3MouseExited
         JLabel label = (JLabel) evt.getSource();
-        label.setForeground(new Color(102,255,102));
+        label.setForeground(new Color(102, 255, 102));
     }//GEN-LAST:event_jLabel3MouseExited
 
     private void jLabel3MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel3MouseClicked
-        new ForgotPasswordJDialog(this, rootPaneCheckingEnabled).setVisible(true);
+        openForgotPasswordOptions();
     }//GEN-LAST:event_jLabel3MouseClicked
 
     /**

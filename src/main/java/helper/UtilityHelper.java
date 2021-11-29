@@ -11,6 +11,8 @@ package helper;
  */
 public class UtilityHelper {
 
+    public static int selectedTab;
+
     public static String toVND(float element) {
         return String.format("%,.0f", element) + " VND";
     }

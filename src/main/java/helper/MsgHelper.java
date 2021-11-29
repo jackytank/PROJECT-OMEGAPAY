@@ -26,4 +26,5 @@ public class MsgHelper {
     public static String promptInput(Component parent, String message) {
         return JOptionPane.showInputDialog(parent, message, "EduSys", JOptionPane.INFORMATION_MESSAGE);
     }
+
 }

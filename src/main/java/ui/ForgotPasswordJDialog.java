@@ -46,21 +46,6 @@ public class ForgotPasswordJDialog extends javax.swing.JDialog {
         setTitle("Forgot password");
     }
 
-    private void sendSMS() {
-        // isFormValid(false) is for validating SMS form
-        if (isSMSFormValid()) {
-            SMSCode = generateVerifyCode();
-            Twilio.init(ACCOUNT_SID, AUTH_TOKEN);
-            Message message = Message.creator(
-                    new PhoneNumber("+84" + txtPhoneSMS.getText()),
-                    new PhoneNumber(""),
-                    "Your OmegaPay verification code is: " + SMSCode
-            ).create();
-            String userInput = MsgHelper.promptInput(this, "The verification code was sent to your phone, enter the code to continue..");
-            verifySMS(userInput, SMSCode);
-        }
-    }
-
     private void init() {
         int selected = UtilityHelper.selectedTab;
         if (selected == 0) {
@@ -77,6 +62,21 @@ public class ForgotPasswordJDialog extends javax.swing.JDialog {
                     + "Your password is: " + userLogin.getPassword());
         } else {
             MsgHelper.alert(this, "SMS Code is not valid!!");
+        }
+    }
+
+    private void sendSMS() {
+        // isFormValid(false) is for validating SMS form
+        if (isSMSFormValid()) {
+            SMSCode = generateVerifyCode();
+            Twilio.init(ACCOUNT_SID, AUTH_TOKEN);
+            Message message = Message.creator(
+                    new PhoneNumber("+84" + txtPhoneSMS.getText()),
+                    new PhoneNumber(""),
+                    "Your OmegaPay verification code is: " + SMSCode
+            ).create();
+            String userInput = MsgHelper.promptInput(this, "The verification code was sent to your phone, enter the code to continue..");
+            verifySMS(userInput, SMSCode);
         }
     }
 

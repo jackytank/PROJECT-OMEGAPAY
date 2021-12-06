@@ -112,6 +112,7 @@ public class addMoneyJDialog extends javax.swing.JDialog {
             mainJFrame.initDashboard();
             mainJFrame.initAccount();
             mainJFrame.initTransfer();
+            mainJFrame.initSaving();
             MsgHelper.alert(this, "Deposit successfully");
         }
     }

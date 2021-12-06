@@ -15,7 +15,9 @@ import com.itextpdf.text.Document;
 import com.itextpdf.text.DocumentException;
 import com.itextpdf.text.Element;
 import com.itextpdf.text.Image;
+import com.itextpdf.text.PageSize;
 import com.itextpdf.text.Paragraph;
+import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
 import com.itextpdf.text.pdf.draw.LineSeparator;
 import dao.CardDAO;
@@ -33,23 +35,26 @@ import java.awt.Color;
 import java.awt.Desktop;
 import java.awt.HeadlessException;
 import java.awt.event.KeyEvent;
+import java.awt.print.PrinterException;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
+import java.text.MessageFormat;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
@@ -206,7 +211,61 @@ public class MainJFrame extends javax.swing.JFrame {
     }
 
     private void exportPDF() {
+        //1st way using built in JTable print method
+        try {
+            tblLastTransaction.print(JTable.PrintMode.FIT_WIDTH,
+                    new MessageFormat("TRANSACTION HISTORY"), new MessageFormat("THANK FOR USING OMEGAPAY!"));
+        } catch (PrinterException ex) {
+            Logger.getLogger(MainJFrame.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        //2nd way using IText library
 
+//        try {
+//            JFileChooser chooser = new JFileChooser(System.getProperty("user.home") + "/Desktop");
+//            int tmp = chooser.showSaveDialog(this);
+//            File file = null;
+//            if (tmp == JFileChooser.APPROVE_OPTION) {
+//                file = chooser.getSelectedFile();
+//                Document doc = new Document(PageSize.A4);
+//                PdfWriter.getInstance(doc, new FileOutputStream(file + ".pdf"));
+//                int colCount = tblLastTransaction.getColumnCount();
+//                int rowCount = tblLastTransaction.getRowCount();
+//                doc.open();
+//                PdfPTable table = new PdfPTable(colCount);
+//
+//                //add title
+//                Paragraph title = new Paragraph("TRANSACTION HISTORY", courier20);
+//                Paragraph currentDate = new Paragraph(String.valueOf(new Date()), courier12);
+//                title.setAlignment(Element.ALIGN_CENTER);
+//                currentDate.setAlignment(Element.ALIGN_CENTER);
+//                doc.add(title);
+//                addEmptyLine(doc, 1);
+//
+//                //add header row
+//                for (int i = 0; i < colCount; i++) {
+//                    table.addCell(tblLastTransaction.getColumnName(i));
+//                }
+//                doc.add(table);
+//
+//                //add table contents
+//                for (int j = 0; j < rowCount; j++) {
+//                    table = new PdfPTable(colCount);
+//                    for (int k = 0; k < colCount; k++) {
+//                        table.addCell(String.valueOf(tblLastTransaction.getValueAt(j, k)));
+//                    }
+//                    doc.add(table);
+//                }
+//                doc.close();
+//                if (MsgHelper.confirm(this, "Export PDF successfully! Do you want to open it?")) {
+//                    Desktop desktop = Desktop.getDesktop();
+//                    desktop.open(new File(file.toString() + ".pdf"));
+//                }
+//            }
+//        } catch (HeadlessException | FileNotFoundException | DocumentException e) {
+//            throw new RuntimeException(e);
+//        } catch (IOException ex) {
+//            throw new RuntimeException(ex);
+//        }
     }
 
     //-------------------------- Card Section ---------------------------
@@ -374,6 +433,7 @@ public class MainJFrame extends javax.swing.JFrame {
                 initTransfer();
                 initDashboard();
                 initAccount();
+                initSaving();
                 if (MsgHelper.confirm(this, "Transfer successfully! Do you want to print and view receipt?")) {
                     printReceiptPDF();
                     clearTransferForm();
@@ -550,7 +610,6 @@ public class MainJFrame extends javax.swing.JFrame {
         lblUserProfit.setToolTipText(String.valueOf(profit));
         lblUserTotal.setText(UtilityHelper.toVND(balance + profit));
         lblUserTotal.setToolTipText(String.valueOf(balance + profit));
-
     }
 
     class Countdown extends Thread {
@@ -615,6 +674,7 @@ public class MainJFrame extends javax.swing.JFrame {
         initAccount();
         initDashboard();
         initTransfer();
+        initSaving();
         MsgHelper.alert(this, "Redeem successfully!!");
     }
 

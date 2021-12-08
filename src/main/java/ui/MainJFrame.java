@@ -21,13 +21,16 @@ import com.itextpdf.text.pdf.draw.LineSeparator;
 import dao.CardDAO;
 import dao.TransactionDAO;
 import dao.UserDetailDAO;
+import dao.UserLoginDAO;
 import entity.Card;
 import entity.Transaction;
 import entity.User_Detail;
+import entity.User_Login;
 import helper.AuthUser;
 import helper.DateHelper;
 import helper.ImageHelper;
 import helper.MsgHelper;
+import helper.SendPhone;
 import helper.UtilityHelper;
 import java.awt.Color;
 import java.awt.Desktop;
@@ -73,6 +76,7 @@ public class MainJFrame extends javax.swing.JFrame {
     CardDAO cardDAO = new CardDAO();
     TransactionDAO transDAO = new TransactionDAO();
     UserDetailDAO detailDAO = new UserDetailDAO();
+    UserLoginDAO loginDAO = new UserLoginDAO();
 
     Object[] cardNames = {"Agribank", "Sacombank", "Techcombank", "MBBank"};
     int cardTableRow = -1;
@@ -411,6 +415,7 @@ public class MainJFrame extends javax.swing.JFrame {
     private void transferMoney() {
         Float amount = UtilityHelper.toFloat(txtAmount.getText());
         String toAccount = txtToAccount.getText();
+        User_Login user_Login = loginDAO.selectByID(AuthUser.user.getUsername());
         User_Detail userDetail = detailDAO.selectByID(AuthUser.user.getOmegaAccount());
         User_Detail checkDestination = detailDAO.selectByID(toAccount);
         try {
@@ -425,17 +430,24 @@ public class MainJFrame extends javax.swing.JFrame {
             } else if (amount < 50000) {
                 MsgHelper.alert(this, "Minimum transfer is 50.000 VND");
             } else {
-                Transaction tran = getTransferForm();
-                transDAO.insert(tran);
-                updateBalanceAfterTransfer(amount);
-                initTransfer();
-                initDashboard();
-                initAccount();
-                initSaving();
-                if (MsgHelper.confirm(this, "Transfer successfully! Do you want to print and view receipt?")) {
-                    printReceiptPDF();
-                    clearTransferForm();
+                SendPhone.send(userDetail.getPhone());
+                String userInput = MsgHelper.promptInput(this, "The verification code was sent to your phone, enter the code to continue..");
+                if (SendPhone.isCodeValid(userInput, user_Login)) {
+                    Transaction tran = getTransferForm();
+                    transDAO.insert(tran);
+                    updateBalanceAfterTransfer(amount);
+                    initTransfer();
+                    initDashboard();
+                    initAccount();
+                    initSaving();
+                    if (MsgHelper.confirm(this, "Transfer successfully! Do you want to print and view receipt?")) {
+                        printReceiptPDF();
+                        clearTransferForm();
+                    }
+                } else {
+                    MsgHelper.alert(this, "Your verification code is not correct!");
                 }
+
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -620,39 +632,49 @@ public class MainJFrame extends javax.swing.JFrame {
 
         @Override
         public void run() {
-            float duration = 0F, interest = 0F;
-            if (savingName.equals("alpha")) {
-                duration = 19;
-                interest = 1.1F;
-            } else if (savingName.equals("epsilon")) {
-                duration = 30;
-                interest = 2.6F;
-            } else if (savingName.equals("delta")) {
-                duration = Integer.MAX_VALUE;
-                interest = 0.1F;
-            } else if (savingName.equals("omicron")) {
-                duration = 15;
-                interest = 3F;
-            } else if (savingName.equals("sigma")) {
-                duration = 10;
-                interest = 1F;
-            } else if (savingName.equals("iota")) {
-                duration = Integer.MAX_VALUE;
-                interest = 0.13F;
-            }
-            // formula: increase = Increase ÷ Original Number × 100
+            User_Login user_Login = loginDAO.selectByID(AuthUser.user.getUsername());
             User_Detail user_Detail = detailDAO.selectByID(AuthUser.user.getOmegaAccount());
-            float balance = user_Detail.getOmegaBalance();
-            float increase = 0;
-            for (int i = 1; i <= duration; i++) {
-                try {
-                    Thread.sleep(1000);
-                    //interest rate per second
-                    increase += balance * interest / 100;
-                    setSavingForm(savingName, "" + i, balance, increase);
-                } catch (InterruptedException ex) {
-                    throw new RuntimeException(ex);
+            float duration = 0F, interest = 0F;
+
+            SendPhone.send(user_Detail.getPhone());
+            String userInput = MsgHelper.promptInput(MainJFrame.this, "The verification code was sent to your phone, enter the code to continue..");
+            if (SendPhone.isCodeValid(userInput, user_Login)) {
+                MsgHelper.alert(null, "Successfully verified!");
+                if (savingName.equals("alpha")) {
+                    duration = 19;
+                    interest = 1.1F;
+                } else if (savingName.equals("epsilon")) {
+                    duration = 30;
+                    interest = 2.6F;
+                } else if (savingName.equals("delta")) {
+                    duration = Integer.MAX_VALUE;
+                    interest = 0.1F;
+                } else if (savingName.equals("omicron")) {
+                    duration = 15;
+                    interest = 3F;
+                } else if (savingName.equals("sigma")) {
+                    duration = 10;
+                    interest = 1F;
+                } else if (savingName.equals("iota")) {
+                    duration = Integer.MAX_VALUE;
+                    interest = 0.13F;
                 }
+
+                // formula: increase = Increase ÷ Original Number × 100
+                float balance = user_Detail.getOmegaBalance();
+                float increase = 0;
+                for (int i = 1; i <= duration; i++) {
+                    try {
+                        Thread.sleep(1000);
+                        //interest rate per second
+                        increase += balance * interest / 100;
+                        setSavingForm(savingName, "" + i, balance, increase);
+                    } catch (InterruptedException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                }
+            } else {
+                MsgHelper.alert(null, "Your verification code is not correct!");
             }
         }
     }

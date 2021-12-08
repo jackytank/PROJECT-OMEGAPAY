@@ -6,16 +6,14 @@
 package ui;
 
 import com.formdev.flatlaf.FlatLightLaf;
-import com.twilio.Twilio;
-import com.twilio.rest.api.v2010.account.Message;
-import com.twilio.type.PhoneNumber;
 import dao.UserDetailDAO;
 import dao.UserLoginDAO;
 import entity.User_Detail;
 import entity.User_Login;
 import helper.MsgHelper;
+import helper.SendGmail;
+import helper.SendPhone;
 import helper.UtilityHelper;
-import java.util.Random;
 import javax.swing.JDialog;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
@@ -25,12 +23,6 @@ import javax.swing.UnsupportedLookAndFeelException;
  * @author balis
  */
 public class ForgotPasswordJDialog extends javax.swing.JDialog {
-
-    public static final String ACCOUNT_SID = "";
-
-    public static final String AUTH_TOKEN = "";
-
-    private String SMSCode, EmailCode;
 
     UserDetailDAO detailDAO = new UserDetailDAO();
     UserLoginDAO loginDAO = new UserLoginDAO();
@@ -46,21 +38,6 @@ public class ForgotPasswordJDialog extends javax.swing.JDialog {
         setTitle("Forgot password");
     }
 
-    private void sendSMS() {
-        // isFormValid(false) is for validating SMS form
-        if (isSMSFormValid()) {
-            SMSCode = generateVerifyCode();
-            Twilio.init(ACCOUNT_SID, AUTH_TOKEN);
-            Message message = Message.creator(
-                    new PhoneNumber("+84" + txtPhoneSMS.getText()),
-                    new PhoneNumber(""),
-                    "Your OmegaPay verification code is: " + SMSCode
-            ).create();
-            String userInput = MsgHelper.promptInput(this, "The verification code was sent to your phone, enter the code to continue..");
-            verifySMS(userInput, SMSCode);
-        }
-    }
-
     private void init() {
         int selected = UtilityHelper.selectedTab;
         if (selected == 0) {
@@ -70,13 +47,18 @@ public class ForgotPasswordJDialog extends javax.swing.JDialog {
         }
     }
 
-    private void verifySMS(String input, String SMSCode) {
-        if (input.equals(SMSCode)) {
-            User_Login userLogin = loginDAO.selectByID(txtUsernameSMS.getText());
-            MsgHelper.alert(this, "Your phone is successfully verify!\n"
-                    + "Your password is: " + userLogin.getPassword());
-        } else {
-            MsgHelper.alert(this, "SMS Code is not valid!!");
+    private void sendSMS() {
+        // isFormValid(false) is for validating SMS form
+        if (isSMSFormValid()) {
+            User_Login user_Login = loginDAO.selectByID(txtUsernameSMS.getText());
+            SendPhone.send(txtPhoneSMS.getText());
+            String userInput = MsgHelper.promptInput(this, "The verification code was sent to your phone, enter the code to continue..");
+            if (SendPhone.isCodeValid(userInput, user_Login)) {
+                MsgHelper.alert(this, "Successfully verified! Your password is: " + user_Login.getPassword());
+            } else {
+                MsgHelper.alert(this, "Your verification code is not correct!");
+            }
+            this.dispose();
         }
     }
 
@@ -106,20 +88,46 @@ public class ForgotPasswordJDialog extends javax.swing.JDialog {
         return isValid;
     }
 
-    //the boolean isEmailForm is for validation whether it is email form (true) or sms form (false)
-    private boolean isFormValid(boolean isEmailForm) {
+    // ----------------------------- Email section ----------------------------
+    private void sendEmail() {
+        if (isEmailFormValid()) {
+            String code = UtilityHelper.randomString(6);
+            Thread t = new Thread() {
+                @Override
+                public void run() {
+                    SendGmail.sendMail(txtEmail.getText(), "Verification Code", "Your verification Code is : " + code);
+                }
+            };
+            t.start();
+            String userInput = MsgHelper.promptInput(this, "The verification code was sent to your email, enter the code to continue..");
+            verifyEmailCode(userInput, code);
+            this.dispose();
+        }
+    }
+
+    private void verifyEmailCode(String input, String EmailCode) {
+        if (input.equals(EmailCode)) {
+            User_Login userLogin = loginDAO.selectByID(txtUsernameEmail.getText());
+            MsgHelper.alert(this, "Your email is successfully verify!\n"
+                    + "Your password is: " + userLogin.getPassword());
+        } else {
+            MsgHelper.alert(this, "Email Code is not valid!!");
+        }
+    }
+
+    private boolean isEmailFormValid() {
         boolean isValid = true;
         String error = "";
-        if (isEmailForm) {
-            User_Detail userDetail = detailDAO.selectByID(txtOmegaAccountEmail.getText());
-            User_Login userLogin = loginDAO.selectByID(txtUsernameEmail.getText());
-            if (userDetail == null) {
-                error += "Omega Account is not valid\n";
-                isValid = false;
-            } else if (userLogin == null) {
-                error += "Username is not valid\n";
-                isValid = false;
-            } else if (!txtEmail.getText().equals(userDetail.getEmail())) {
+        User_Detail userDetail = detailDAO.selectByID(txtOmegaAccountEmail.getText());
+        User_Login userLogin = loginDAO.selectByID(txtUsernameEmail.getText());
+        if (userDetail == null) {
+            error += "Omega Account is not valid\n";
+            isValid = false;
+        } else if (userLogin == null) {
+            error += "Username is not valid\n";
+            isValid = false;
+        } else if (userDetail != null) {
+            if (!txtEmail.getText().equals(userDetail.getEmail())) {
                 error += "Email is not valid\n";
                 isValid = false;
             }
@@ -128,11 +136,6 @@ public class ForgotPasswordJDialog extends javax.swing.JDialog {
             MsgHelper.alert(this, error);
         }
         return isValid;
-    }
-
-    //generate random verification code of length 6
-    private String generateVerifyCode() {
-        return "" + (100000 + new Random().nextInt(900000));
     }
 
     /**
@@ -182,9 +185,15 @@ public class ForgotPasswordJDialog extends javax.swing.JDialog {
 
         tabEmail.setBackground(new java.awt.Color(255, 255, 255));
 
+        txtOmegaAccountEmail.setText("690078902233");
+
         jLabel1.setText("Enter Omega Account");
 
+        txtUsernameEmail.setText("To Minh Tri");
+
         jLabel2.setText("Enter Username");
+
+        txtEmail.setText("tritmps15506@fpt.edu.vn");
 
         jLabel3.setText("Enter email to receive password");
 
@@ -238,9 +247,15 @@ public class ForgotPasswordJDialog extends javax.swing.JDialog {
 
         tabSMS.setBackground(new java.awt.Color(255, 255, 255));
 
+        txtOmegaAccountSMS.setText("690078902233");
+
         jLabel4.setText("Enter Omega Account");
 
+        txtUsernameSMS.setText("To Minh Tri");
+
         jLabel5.setText("Enter Username");
+
+        txtPhoneSMS.setText("0396069932");
 
         jLabel6.setText("Enter phonenumber to receive password");
 
@@ -322,7 +337,7 @@ public class ForgotPasswordJDialog extends javax.swing.JDialog {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnSendToEmailActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSendToEmailActionPerformed
-
+        sendEmail();
     }//GEN-LAST:event_btnSendToEmailActionPerformed
 
     private void btnSendToPhoneActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSendToPhoneActionPerformed

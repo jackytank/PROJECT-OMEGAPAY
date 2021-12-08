@@ -12,6 +12,7 @@ ui\MainJFrame$23.class
 ui\MainJFrame$33.class
 ui\addMoneyJDialog$5.class
 ui\MainJFrame$2.class
+helper\SendPhone.class
 dao\CardDAO.class
 ui\MainJFrame$20.class
 ui\addCardJDialog$1.class

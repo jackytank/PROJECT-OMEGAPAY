@@ -20,6 +20,7 @@ ui\EmailOrSMSJDialog$2.class
 ui\MainJFrame$19.class
 ui\LoginJFrame$3.class
 ui\addMoneyJDialog$2.class
+ui\ForgotPasswordJDialog$4$1.class
 ui\MainJFrame$5.class
 ui\SignupDetailsJDialog$2.class
 ui\addCardJDialog.class
@@ -29,6 +30,7 @@ ui\MainJFrame$8.class
 ui\MainJFrame$31.class
 helper\JDBCHelper.class
 ui\GreetJDialog$1.class
+helper\SendGmail$1.class
 ui\ForgotPasswordJDialog$3.class
 ui\LoginJFrame$8.class
 ui\LoginJFrame.class
@@ -51,10 +53,12 @@ ui\addMoneyJDialog$4.class
 ui\ChangePasswordJDialog$3.class
 ui\EmailOrSMSJDialog$1.class
 entity\User_Login.class
+ui\ForgotPasswordJDialog$4.class
 ui\LoginJFrame$1.class
 ui\MainJFrame$3.class
 ui\ChangePasswordJDialog.class
 ui\EmailOrSMSJDialog$3.class
+helper\SendGmail.class
 ui\ChangePasswordJDialog$1.class
 dao\TransactionDAO.class
 helper\ImageHelper.class
@@ -84,7 +88,6 @@ ui\MainJFrame.class
 ui\addMoneyJDialog$6.class
 ui\MainJFrame$11.class
 ui\EmailOrSMSJDialog$3$1.class
-ui\ForgotPasswordJDialog$3$1.class
 ui\MainJFrame$1.class
 ui\SignupDetailsJDialog$4.class
 ui\MainJFrame$21.class

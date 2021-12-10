@@ -108,6 +108,7 @@ public class addMoneyJDialog extends javax.swing.JDialog {
         if (isAddMoneyFormValid()) {
             updateBalancesAfterDeposit(UtilityHelper.toFloat(txtMoneyAmount.getText()));
             initAddMoneyJDialog();
+            mainJFrame.updateUserStatus();
             mainJFrame.initCard();
             mainJFrame.initDashboard();
             mainJFrame.initAccount();

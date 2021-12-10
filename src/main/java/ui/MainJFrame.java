@@ -79,6 +79,7 @@ public class MainJFrame extends javax.swing.JFrame {
     UserLoginDAO loginDAO = new UserLoginDAO();
 
     Object[] cardNames = {"Agribank", "Sacombank", "Techcombank", "MBBank"};
+    String[] statusList = {"Silver", "Gold", "Platinum"};
     int cardTableRow = -1;
     Countdown count;
 
@@ -103,6 +104,7 @@ public class MainJFrame extends javax.swing.JFrame {
     public MainJFrame() {
         initComponents();
         setLocationRelativeTo(null);
+        updateUserStatus();
         initDashboard();
         initTransfer();
         initSaving();
@@ -436,6 +438,7 @@ public class MainJFrame extends javax.swing.JFrame {
                     Transaction tran = getTransferForm();
                     transDAO.insert(tran);
                     updateBalanceAfterTransfer(amount);
+                    updateUserStatus();
                     initTransfer();
                     initDashboard();
                     initAccount();
@@ -451,6 +454,20 @@ public class MainJFrame extends javax.swing.JFrame {
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    protected void updateUserStatus() {
+        User_Detail user_Detail = detailDAO.selectByID(AuthUser.user.getOmegaAccount());
+        if (user_Detail.getOmegaBalance() < 50000000) {
+            user_Detail.setStatus(statusList[0]);
+            detailDAO.update(user_Detail);
+        } else if (user_Detail.getOmegaBalance() < 100000000) {
+            user_Detail.setStatus(statusList[1]);
+            detailDAO.update(user_Detail);
+        } else {
+            user_Detail.setStatus(statusList[2]);
+            detailDAO.update(user_Detail);
         }
     }
 
@@ -691,11 +708,20 @@ public class MainJFrame extends javax.swing.JFrame {
         float balance = Float.parseFloat(lblUserTotal.getToolTipText());
         user_Detail.setOmegaBalance(balance);
         detailDAO.updateBalance(user_Detail);
+        updateUserStatus();
         initAccount();
         initDashboard();
         initTransfer();
         initSaving();
         MsgHelper.alert(this, "Redeem successfully!!");
+    }
+
+    private void subscribeSaving(String savingName) {
+        if (MsgHelper.confirm(this, "Do you want to subscribe to " + savingName + " plan?")) {
+            count = null;
+            count = new Countdown(savingName);
+            count.start();
+        }
     }
 
 //-------------------------- Account Section ---------------------------
@@ -1005,7 +1031,6 @@ public class MainJFrame extends javax.swing.JFrame {
         jLabel45 = new javax.swing.JLabel();
         txtBillingAddress = new javax.swing.JTextField();
         jLabel46 = new javax.swing.JLabel();
-        btnSave = new javax.swing.JButton();
         lblAddNew = new javax.swing.JLabel();
         lblRemoveCard = new javax.swing.JLabel();
         btnPrev = new javax.swing.JButton();
@@ -1362,8 +1387,9 @@ public class MainJFrame extends javax.swing.JFrame {
 
         lblCardname.setFont(new java.awt.Font("Courier New", 1, 14)); // NOI18N
         lblCardname.setForeground(new java.awt.Color(255, 255, 255));
+        lblCardname.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         lblCardname.setText("ARGIBANK");
-        pnlHomeSection.add(lblCardname, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 360, 80, -1));
+        pnlHomeSection.add(lblCardname, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, 360, 220, -1));
 
         lblCardNumber.setFont(new java.awt.Font("Credit Card", 0, 12)); // NOI18N
         lblCardNumber.setForeground(new java.awt.Color(255, 255, 255));
@@ -2319,7 +2345,7 @@ public class MainJFrame extends javax.swing.JFrame {
         lblATMCardName.setForeground(new java.awt.Color(255, 255, 255));
         lblATMCardName.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         lblATMCardName.setText("ARGIBANK");
-        pnlCard2.add(lblATMCardName, new org.netbeans.lib.awtextra.AbsoluteConstraints(110, 40, 150, -1));
+        pnlCard2.add(lblATMCardName, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, 40, 200, -1));
 
         lblATMCardNumber.setFont(new java.awt.Font("Credit Card", 0, 12)); // NOI18N
         lblATMCardNumber.setForeground(new java.awt.Color(255, 255, 255));
@@ -2332,32 +2358,33 @@ public class MainJFrame extends javax.swing.JFrame {
         cboCardNames.setFont(new java.awt.Font("Arial", 1, 12)); // NOI18N
         cboCardNames.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Agribank", " " }));
         cboCardNames.setBorder(javax.swing.BorderFactory.createEtchedBorder());
+        cboCardNames.setEnabled(false);
+        cboCardNames.setFocusable(false);
         cboCardNames.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 cboCardNamesActionPerformed(evt);
             }
         });
 
+        txtExpirationDate.setEditable(false);
         txtExpirationDate.setText("1-11-2025");
 
         jLabel19.setText("Card name");
 
+        txtCardNumber.setEditable(false);
         txtCardNumber.setText("650492834958");
 
         jLabel44.setText("Card number");
 
+        txtCardHolder.setEditable(false);
         txtCardHolder.setText("To Minh Tri");
 
         jLabel45.setText("Cardholder's name");
 
+        txtBillingAddress.setEditable(false);
         txtBillingAddress.setText("No.69 St. Truong Chinh, HCM");
 
         jLabel46.setText("Billing address");
-
-        btnSave.setBackground(new java.awt.Color(238, 0, 51));
-        btnSave.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
-        btnSave.setForeground(new java.awt.Color(255, 255, 255));
-        btnSave.setText("SAVE");
 
         lblAddNew.setBackground(new java.awt.Color(238, 0, 51));
         lblAddNew.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
@@ -2413,63 +2440,70 @@ public class MainJFrame extends javax.swing.JFrame {
         pnlCardDetail1.setLayout(pnlCardDetail1Layout);
         pnlCardDetail1Layout.setHorizontalGroup(
             pnlCardDetail1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, pnlCardDetail1Layout.createSequentialGroup()
+                .addGroup(pnlCardDetail1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(pnlCardDetail1Layout.createSequentialGroup()
+                        .addGap(30, 30, 30)
+                        .addComponent(lblRemoveCard, javax.swing.GroupLayout.PREFERRED_SIZE, 99, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(pnlCardDetail1Layout.createSequentialGroup()
+                        .addGap(200, 200, 200)
+                        .addComponent(btnPrev, javax.swing.GroupLayout.PREFERRED_SIZE, 70, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(20, 20, 20)
+                        .addComponent(btnNext, javax.swing.GroupLayout.PREFERRED_SIZE, 70, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addGap(219, 219, 219))
             .addGroup(pnlCardDetail1Layout.createSequentialGroup()
-                .addGroup(pnlCardDetail1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, pnlCardDetail1Layout.createSequentialGroup()
+                .addGroup(pnlCardDetail1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(pnlCardDetail1Layout.createSequentialGroup()
                         .addGap(109, 109, 109)
                         .addComponent(lblCardOrder1, javax.swing.GroupLayout.PREFERRED_SIZE, 48, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(lblCardID, javax.swing.GroupLayout.PREFERRED_SIZE, 98, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(71, 71, 71)
-                        .addGroup(pnlCardDetail1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(pnlCardDetail1Layout.createSequentialGroup()
-                                .addGroup(pnlCardDetail1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jLabel19, javax.swing.GroupLayout.PREFERRED_SIZE, 117, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(jLabel27, javax.swing.GroupLayout.PREFERRED_SIZE, 117, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addGap(0, 0, Short.MAX_VALUE))
-                            .addComponent(cboCardNames, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                        .addComponent(lblCardID, javax.swing.GroupLayout.PREFERRED_SIZE, 98, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(pnlCardDetail1Layout.createSequentialGroup()
+                        .addGap(30, 30, 30)
+                        .addComponent(lblAddNew, javax.swing.GroupLayout.PREFERRED_SIZE, 99, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(pnlCardDetail1Layout.createSequentialGroup()
+                        .addContainerGap()
+                        .addComponent(pnlCard2, javax.swing.GroupLayout.PREFERRED_SIZE, 298, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addGap(18, 18, 18)
+                .addGroup(pnlCardDetail1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, pnlCardDetail1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                        .addGroup(pnlCardDetail1Layout.createSequentialGroup()
+                            .addGroup(pnlCardDetail1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                .addComponent(jLabel19, javax.swing.GroupLayout.PREFERRED_SIZE, 117, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(jLabel27, javax.swing.GroupLayout.PREFERRED_SIZE, 117, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addGap(0, 0, Short.MAX_VALUE))
+                        .addComponent(cboCardNames, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                     .addGroup(pnlCardDetail1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addGroup(pnlCardDetail1Layout.createSequentialGroup()
-                            .addGroup(pnlCardDetail1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                .addGroup(pnlCardDetail1Layout.createSequentialGroup()
-                                    .addGap(30, 30, 30)
-                                    .addComponent(lblAddNew, javax.swing.GroupLayout.PREFERRED_SIZE, 99, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addGroup(pnlCardDetail1Layout.createSequentialGroup()
-                                    .addContainerGap()
-                                    .addComponent(pnlCard2, javax.swing.GroupLayout.PREFERRED_SIZE, 298, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                            .addGap(28, 28, 28)
-                            .addGroup(pnlCardDetail1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                .addComponent(txtExpirationDate, javax.swing.GroupLayout.PREFERRED_SIZE, 232, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(jLabel44, javax.swing.GroupLayout.PREFERRED_SIZE, 110, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(txtCardNumber, javax.swing.GroupLayout.PREFERRED_SIZE, 232, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(jLabel45, javax.swing.GroupLayout.PREFERRED_SIZE, 113, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(txtCardHolder, javax.swing.GroupLayout.PREFERRED_SIZE, 232, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(jLabel46, javax.swing.GroupLayout.PREFERRED_SIZE, 113, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(txtBillingAddress, javax.swing.GroupLayout.PREFERRED_SIZE, 232, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                        .addGroup(pnlCardDetail1Layout.createSequentialGroup()
-                            .addGap(30, 30, 30)
-                            .addComponent(lblRemoveCard, javax.swing.GroupLayout.PREFERRED_SIZE, 99, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addGap(203, 203, 203)
-                            .addComponent(btnSave, javax.swing.GroupLayout.PREFERRED_SIZE, 232, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGroup(pnlCardDetail1Layout.createSequentialGroup()
-                            .addGap(200, 200, 200)
-                            .addComponent(btnPrev, javax.swing.GroupLayout.PREFERRED_SIZE, 70, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addGap(20, 20, 20)
-                            .addComponent(btnNext, javax.swing.GroupLayout.PREFERRED_SIZE, 70, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                .addGap(15, 15, 15))
+                        .addComponent(txtExpirationDate, javax.swing.GroupLayout.PREFERRED_SIZE, 232, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(jLabel44, javax.swing.GroupLayout.PREFERRED_SIZE, 110, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(txtCardNumber, javax.swing.GroupLayout.PREFERRED_SIZE, 232, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(jLabel45, javax.swing.GroupLayout.PREFERRED_SIZE, 113, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(txtCardHolder, javax.swing.GroupLayout.PREFERRED_SIZE, 232, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(jLabel46, javax.swing.GroupLayout.PREFERRED_SIZE, 113, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(txtBillingAddress, javax.swing.GroupLayout.PREFERRED_SIZE, 232, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addGap(25, 25, 25))
         );
         pnlCardDetail1Layout.setVerticalGroup(
             pnlCardDetail1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(pnlCardDetail1Layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(pnlCardDetail1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                .addGap(28, 28, 28)
+                .addGroup(pnlCardDetail1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(pnlCardDetail1Layout.createSequentialGroup()
+                        .addGroup(pnlCardDetail1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addGroup(pnlCardDetail1Layout.createSequentialGroup()
+                                .addGroup(pnlCardDetail1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                    .addComponent(lblCardID, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(lblCardOrder1, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addGap(213, 213, 213))
+                            .addComponent(pnlCard2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(62, 62, 62)
+                        .addComponent(lblAddNew)
+                        .addGap(20, 20, 20)
+                        .addComponent(lblRemoveCard))
                     .addGroup(pnlCardDetail1Layout.createSequentialGroup()
                         .addComponent(jLabel19)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(pnlCardDetail1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(cboCardNames, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(lblCardID, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(lblCardOrder1, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(cboCardNames, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(jLabel27)
                         .addGap(6, 6, 6)
@@ -2481,24 +2515,12 @@ public class MainJFrame extends javax.swing.JFrame {
                         .addGap(6, 6, 6)
                         .addComponent(jLabel45)
                         .addGap(6, 6, 6)
-                        .addComponent(txtCardHolder, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(pnlCard2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGroup(pnlCardDetail1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(pnlCardDetail1Layout.createSequentialGroup()
+                        .addComponent(txtCardHolder, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(6, 6, 6)
                         .addComponent(jLabel46)
                         .addGap(6, 6, 6)
-                        .addComponent(txtBillingAddress, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(pnlCardDetail1Layout.createSequentialGroup()
-                        .addGap(62, 62, 62)
-                        .addComponent(lblAddNew)))
-                .addGap(5, 5, 5)
-                .addGroup(pnlCardDetail1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(pnlCardDetail1Layout.createSequentialGroup()
-                        .addGap(15, 15, 15)
-                        .addComponent(lblRemoveCard))
-                    .addComponent(btnSave, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(54, 54, 54)
+                        .addComponent(txtBillingAddress, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addGap(60, 60, 60)
                 .addGroup(pnlCardDetail1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(btnPrev)
                     .addComponent(btnNext))
@@ -2987,39 +3009,27 @@ public class MainJFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_pnlSavingMouseExited
 
     private void btnAlphaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAlphaActionPerformed
-        count = null;
-        count = new Countdown("alpha");
-        count.start();
+        subscribeSaving("alpha");
     }//GEN-LAST:event_btnAlphaActionPerformed
 
     private void btnEpsilonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEpsilonActionPerformed
-        count = null;
-        count = new Countdown("epsilon");
-        count.start();
+        subscribeSaving("epsilon");
     }//GEN-LAST:event_btnEpsilonActionPerformed
 
     private void btnOmicronActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnOmicronActionPerformed
-        count = null;
-        count = new Countdown("omicron");
-        count.start();
+        subscribeSaving("omicron");
     }//GEN-LAST:event_btnOmicronActionPerformed
 
     private void btnSigmaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSigmaActionPerformed
-        count = null;
-        count = new Countdown("sigma");
-        count.start();
+        subscribeSaving("sigma");
     }//GEN-LAST:event_btnSigmaActionPerformed
 
     private void btnDeltaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDeltaActionPerformed
-        count = null;
-        count = new Countdown("delta");
-        count.start();
+        subscribeSaving("delta");
     }//GEN-LAST:event_btnDeltaActionPerformed
 
     private void btnIotaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnIotaActionPerformed
-        count = null;
-        count = new Countdown("iota");
-        count.start();
+        subscribeSaving("iota");
     }//GEN-LAST:event_btnIotaActionPerformed
 
     private void btnConfirmActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnConfirmActionPerformed
@@ -3083,7 +3093,6 @@ public class MainJFrame extends javax.swing.JFrame {
     private javax.swing.JButton btnOmicron;
     private javax.swing.JButton btnPDF;
     private javax.swing.JButton btnPrev;
-    private javax.swing.JButton btnSave;
     private javax.swing.JButton btnSavePIN;
     private javax.swing.JButton btnSigma;
     private javax.swing.JButton btnTransfer;

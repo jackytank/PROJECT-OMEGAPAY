@@ -13,9 +13,10 @@ Desktop Banking Application - OmegaPay
 - JDBC 9.4
 
 -- Preview
-![image](https://user-images.githubusercontent.com/52403567/141645891-daeffb99-3b56-412b-a3c2-c297a1e57b7d.png)
+![image](https://user-images.githubusercontent.com/52403567/145669130-4e50d5ba-4cad-4c81-87ed-866445ff5c9d.png)
 
-![image](https://user-images.githubusercontent.com/52403567/141645878-56ad0a89-0894-41c6-861d-06ccae7a733c.png)
+
+![image](https://user-images.githubusercontent.com/52403567/145669149-2d7dc4e8-4373-47c5-a997-0b060cee170a.png)
 
 
 ![Blank diagram](https://user-images.githubusercontent.com/52403567/145669082-0f74e83e-1c02-48a5-b514-38bae1e78618.png)

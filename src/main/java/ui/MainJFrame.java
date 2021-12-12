@@ -29,6 +29,7 @@ import entity.User_Login;
 import helper.AuthUser;
 import helper.DateHelper;
 import helper.ImageHelper;
+import helper.JTextFieldLimit;
 import helper.MsgHelper;
 import helper.SendPhone;
 import helper.UtilityHelper;
@@ -72,17 +73,17 @@ import org.apache.poi.ss.usermodel.Workbook;
  * @author balis
  */
 public class MainJFrame extends javax.swing.JFrame {
-
+    
     CardDAO cardDAO = new CardDAO();
     TransactionDAO transDAO = new TransactionDAO();
     UserDetailDAO detailDAO = new UserDetailDAO();
     UserLoginDAO loginDAO = new UserLoginDAO();
-
+    
     Object[] cardNames = {"Agribank", "Sacombank", "Techcombank", "MBBank"};
     String[] statusList = {"Silver", "Gold", "Platinum"};
     int cardTableRow = -1;
     Countdown count;
-
+    
     private final String receiptFile = System.getProperty("user.home") + "/Desktop/receipt.pdf";
     private final String[] websites = new String[]{
         "https://www.youtube.com/watch?v=dQw4w9WgXcQ&ab_channel=RickAstley",
@@ -93,7 +94,7 @@ public class MainJFrame extends javax.swing.JFrame {
         "https://www.youtube.com/watch?v=8GGW93DLC5c&ab_channel=Matts",
         "https://www.youtube.com/watch?v=B_ViNy2X5I8&ab_channel=OfirShoham"
     };
-
+    
     private final com.itextpdf.text.Font courier20 = new com.itextpdf.text.Font(com.itextpdf.text.Font.FontFamily.COURIER, 20);
     private final com.itextpdf.text.Font courier16 = new com.itextpdf.text.Font(com.itextpdf.text.Font.FontFamily.COURIER, 16);
     private final com.itextpdf.text.Font courier12 = new com.itextpdf.text.Font(com.itextpdf.text.Font.FontFamily.COURIER, 12);
@@ -120,7 +121,7 @@ public class MainJFrame extends javax.swing.JFrame {
         fillTransactionTable();
         setDashboardForm(user_Detail);
     }
-
+    
     private void fillTransactionTable() {
         DefaultTableModel disableCellEdit = new DefaultTableModel() {
             @Override
@@ -147,7 +148,7 @@ public class MainJFrame extends javax.swing.JFrame {
             throw new RuntimeException(e);
         }
     }
-
+    
     private void fillCardsCombobox() {
         DefaultComboBoxModel model = (DefaultComboBoxModel) cboCards.getModel();
         model.removeAllElements();
@@ -158,7 +159,7 @@ public class MainJFrame extends javax.swing.JFrame {
             }
         }
     }
-
+    
     private void fillCard() {
         if (cboCards.getItemCount() != 0) {
             Card card = cardDAO.selectByID((Integer) cboCards.getSelectedItem());
@@ -170,11 +171,11 @@ public class MainJFrame extends javax.swing.JFrame {
             }
         }
     }
-
+    
     private void setDashboardForm(User_Detail user) {
         lblOmegaBalance.setText(UtilityHelper.toVND(user.getOmegaBalance()));
     }
-
+    
     private void exportExcel() {
         try {
             JFileChooser jfc = new JFileChooser(System.getProperty("user.home") + "/Desktop");
@@ -213,7 +214,7 @@ public class MainJFrame extends javax.swing.JFrame {
             throw new RuntimeException(e);
         }
     }
-
+    
     private void exportPDF() {
         //1st way using built in JTable print method
         try {
@@ -276,13 +277,16 @@ public class MainJFrame extends javax.swing.JFrame {
     protected void initCard() {
         fillCardComboBox();
         fillCardTable();
+        txtCurrentPIN.setDocument(new JTextFieldLimit(6));
+        txtNewPIN.setDocument(new JTextFieldLimit(6));
+        txtRetypePIN.setDocument(new JTextFieldLimit(6));
         clearCardForm();
     }
-
+    
     private void openAddCardDialog() {
         new addCardJDialog(this, rootPaneCheckingEnabled).setVisible(true);
     }
-
+    
     private void deleteCard() {
         if (MsgHelper.confirm(this, "Do you want to remove card: " + txtCardNumber.getText())) {
             int id = Integer.parseInt(lblCardID.getText());
@@ -292,7 +296,7 @@ public class MainJFrame extends javax.swing.JFrame {
             MsgHelper.alert(this, "Remove card successfully!");
         }
     }
-
+    
     private void clearCardForm() {
         lblCardID.setText("");
         txtCardBalance.setText("");
@@ -307,7 +311,7 @@ public class MainJFrame extends javax.swing.JFrame {
         lblATMExpiry.setText("");
         cardTableRow = -1;
     }
-
+    
     private void fillCardComboBox() {
         DefaultComboBoxModel model = (DefaultComboBoxModel) cboCardNames.getModel();
         model.removeAllElements();
@@ -315,7 +319,7 @@ public class MainJFrame extends javax.swing.JFrame {
             model.addElement(e);
         }
     }
-
+    
     private void fillCardTable() {
         DefaultTableModel disableCellEdit = new DefaultTableModel() {
             @Override
@@ -328,7 +332,7 @@ public class MainJFrame extends javax.swing.JFrame {
         model.setRowCount(0);
         model.setColumnCount(0);
         model.setColumnIdentifiers(new Object[]{"CardID", "CardNumber", "CardBalance", "Bank"});
-
+        
         try {
             List<Card> list = cardDAO.selectByOmegaAccount(AuthUser.user.getOmegaAccount());
             if (list != null) {
@@ -341,7 +345,7 @@ public class MainJFrame extends javax.swing.JFrame {
             throw new RuntimeException(e);
         }
     }
-
+    
     private Card getCardForm() {
         Card card = new Card();
         card.setCardID(Integer.parseInt(lblCardID.getText()));
@@ -355,7 +359,7 @@ public class MainJFrame extends javax.swing.JFrame {
         card.setOmegaAccount(AuthUser.user.getOmegaAccount());
         return card;
     }
-
+    
     private void setCardForm(Card e) {
         //set card form info
         lblCardID.setText(String.valueOf(e.getCardID()));
@@ -375,14 +379,14 @@ public class MainJFrame extends javax.swing.JFrame {
         lblATMExpiry.setText(DateHelper.toString(e.getExpirationDate(), "MM-yy"));
         lblATMCardName.setText(e.getCardName());
     }
-
+    
     private void displayClickedCard() {
         int cardID = (int) tblCardList.getValueAt(this.cardTableRow, 0);
         Card card = cardDAO.selectByID(cardID);
         this.setCardForm(card);
         tabCard.setSelectedIndex(0);
     }
-
+    
     private void changePIN() {
         String cardPIN = lblCardSection2.getToolTipText();
         String userTypePIN = new String(txtCurrentPIN.getPassword());
@@ -413,7 +417,7 @@ public class MainJFrame extends javax.swing.JFrame {
         User_Detail userDetail = detailDAO.selectByID(AuthUser.user.getOmegaAccount());
         lblCurrentOmegaBalance.setText(UtilityHelper.toVND(userDetail.getOmegaBalance()));
     }
-
+    
     private void transferMoney() {
         Float amount = UtilityHelper.toFloat(txtAmount.getText());
         String toAccount = txtToAccount.getText();
@@ -450,13 +454,13 @@ public class MainJFrame extends javax.swing.JFrame {
                 } else {
                     MsgHelper.alert(this, "Your verification code is not correct!");
                 }
-
+                
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
-
+    
     protected void updateUserStatus() {
         User_Detail user_Detail = detailDAO.selectByID(AuthUser.user.getOmegaAccount());
         if (user_Detail.getOmegaBalance() < 50000000) {
@@ -470,13 +474,13 @@ public class MainJFrame extends javax.swing.JFrame {
             detailDAO.update(user_Detail);
         }
     }
-
+    
     private void restrictNumericValueOnly(KeyEvent ke, JTextField txt) {
         if (!Character.isDigit(ke.getKeyChar())) {
             txt.setText("");
         }
     }
-
+    
     private void updateBalanceAfterTransfer(float amount) {
         User_Detail fromAccount = detailDAO.selectByID(AuthUser.user.getOmegaAccount());
         User_Detail toAccount = detailDAO.selectByID(txtToAccount.getText());
@@ -490,13 +494,13 @@ public class MainJFrame extends javax.swing.JFrame {
         detailDAO.updateBalance(fromAccount);
         detailDAO.updateBalance(toAccount);
     }
-
+    
     private void clearTransferForm() {
         txtToAccount.setText("");
         txtAmount.setText("");
         txtAmount.setText("");
     }
-
+    
     private Transaction getTransferForm() {
         Transaction tran = new Transaction();
         tran.setTransactionDate(new Date());
@@ -506,7 +510,7 @@ public class MainJFrame extends javax.swing.JFrame {
         tran.setNote(txtNote.getText());
         return tran;
     }
-
+    
     private void createNewFileIfNotExist(String fileStr) {
         try {
             File file = new File(fileStr);
@@ -519,7 +523,7 @@ public class MainJFrame extends javax.swing.JFrame {
             throw new RuntimeException(e);
         }
     }
-
+    
     private void printReceiptPDF() {
         try {
             createNewFileIfNotExist(receiptFile);
@@ -541,7 +545,7 @@ public class MainJFrame extends javax.swing.JFrame {
             throw new RuntimeException(ex);
         }
     }
-
+    
     private void addTitle(Document document) throws DocumentException, IOException {
         addEmptyLine(document, 1);
         //Add OmegaPay logo to center
@@ -553,14 +557,14 @@ public class MainJFrame extends javax.swing.JFrame {
         Paragraph currentDate = new Paragraph(String.valueOf(new Date()), courier12);
         title.setAlignment(Element.ALIGN_CENTER);
         currentDate.setAlignment(Element.ALIGN_CENTER);
-
+        
         document.add(title);
         document.add(currentDate);
         addEmptyLine(document, 2);
         addDashLine(document);
         addEmptyLine(document, 2);
     }
-
+    
     private void addContent(Document document) throws DocumentException {
         document.add(new Paragraph("Txn ID      : " + generateTxnID(), courier16));
         addEmptyLine(document, 2);
@@ -574,7 +578,7 @@ public class MainJFrame extends javax.swing.JFrame {
         addEmptyLine(document, 2);
         addDashLine(document);
     }
-
+    
     private void addFooter(Document document) throws DocumentException, IOException {
         addEmptyLine(document, 1);
         Paragraph paragraph = new Paragraph();
@@ -596,11 +600,11 @@ public class MainJFrame extends javax.swing.JFrame {
             document.add(new Paragraph("\n"));
         }
     }
-
+    
     private void addDashLine(Document document) throws DocumentException {
         document.add(new LineSeparator());
     }
-
+    
     private void createQRCode(String data, int height, int width) {
         try {
             QRCodeWriter qRCodeWriter = new QRCodeWriter();
@@ -624,9 +628,9 @@ public class MainJFrame extends javax.swing.JFrame {
         //fill user balance and profit 
         User_Detail user_Detail = detailDAO.selectByID(AuthUser.user.getOmegaAccount());
         setSavingForm("", "0", user_Detail.getOmegaBalance(), 0);
-
+        
     }
-
+    
     private void setSavingForm(String savingName, String savingDuration, float balance, float profit) {
         lblSavingName.setText(savingName.toUpperCase());
         lblSavingDuration.setText(savingDuration);
@@ -638,21 +642,21 @@ public class MainJFrame extends javax.swing.JFrame {
         lblUserTotal.setText(UtilityHelper.toVND(balance + profit));
         lblUserTotal.setToolTipText(String.valueOf(balance + profit));
     }
-
+    
     class Countdown extends Thread {
-
+        
         String savingName;
-
+        
         public Countdown(String savingName) {
             this.savingName = savingName;
         }
-
+        
         @Override
         public void run() {
             User_Login user_Login = loginDAO.selectByID(AuthUser.user.getUsername());
             User_Detail user_Detail = detailDAO.selectByID(AuthUser.user.getOmegaAccount());
             float duration = 0F, interest = 0F;
-
+            
             SendPhone.send(user_Detail.getPhone());
             String userInput = MsgHelper.promptInput(MainJFrame.this, "The verification code was sent to your phone, enter the code to continue..");
             if (SendPhone.isCodeValid(userInput, user_Login)) {
@@ -695,13 +699,13 @@ public class MainJFrame extends javax.swing.JFrame {
             }
         }
     }
-
+    
     private void stopThread(Thread thread) {
         if (thread != null) {
             thread.interrupt();
         }
     }
-
+    
     private void redeem() {
         stopThread(count);
         User_Detail user_Detail = detailDAO.selectByID(AuthUser.user.getOmegaAccount());
@@ -715,7 +719,7 @@ public class MainJFrame extends javax.swing.JFrame {
         initSaving();
         MsgHelper.alert(this, "Redeem successfully!!");
     }
-
+    
     private void subscribeSaving(String savingName) {
         if (MsgHelper.confirm(this, "Do you want to subscribe to " + savingName + " plan?")) {
             count = null;
@@ -730,7 +734,7 @@ public class MainJFrame extends javax.swing.JFrame {
         this.defaultEditable();
         this.setAccountForm(user_Detail);
     }
-
+    
     private void choosePhoto() {
         JFileChooser fileChooser = new JFileChooser(System.getProperty("user.home") + "/Desktop");
         if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
@@ -741,7 +745,7 @@ public class MainJFrame extends javax.swing.JFrame {
             lblPhoto.setToolTipText(file.getName());
         }
     }
-
+    
     private void updateUserDetail() {
         User_Detail entity = getAccountForm();
         if (isAccountFormValid()) {
@@ -754,7 +758,7 @@ public class MainJFrame extends javax.swing.JFrame {
             }
         }
     }
-
+    
     private boolean isAccountFormValid() {
         boolean isValid = true;
         String error = "";
@@ -787,7 +791,7 @@ public class MainJFrame extends javax.swing.JFrame {
         }
         return isValid;
     }
-
+    
     private void setAccountForm(User_Detail e) {
         txtOmegaAccount.setText(e.getOmegaAccount());
         txtFirstname.setText(e.getFirstName());
@@ -807,7 +811,7 @@ public class MainJFrame extends javax.swing.JFrame {
         txtOmegaBalance.setText(UtilityHelper.toVND(e.getOmegaBalance()));
         lblBalance.setToolTipText(String.valueOf(e.getOmegaBalance()));
     }
-
+    
     private User_Detail getAccountForm() {
         User_Detail entity = new User_Detail();
         entity.setOmegaAccount(txtOmegaAccount.getText());
@@ -824,7 +828,7 @@ public class MainJFrame extends javax.swing.JFrame {
         entity.setOmegaBalance(Float.parseFloat(lblBalance.getToolTipText()));
         return entity;
     }
-
+    
     private void defaultEditable() {
         txtOmegaAccount.setEnabled(false);
         txtFirstname.setEnabled(false);
@@ -839,7 +843,7 @@ public class MainJFrame extends javax.swing.JFrame {
         txtDayCreated.setEnabled(false);
         txtStatus.setEnabled(false);
     }
-
+    
     private void updateEditable() {
         //Can edit all except OmegaAccount, OmegaBalance, DayCreated and Status
         txtOmegaAccount.setEnabled(false);

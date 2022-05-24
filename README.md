@@ -1,6 +1,9 @@
 # PROJECT-OMEGAPAY
 Desktop Banking Application - OmegaPay
 
+This is a fun project aim to mimic desktop banking app, obviously all the cards, names, credentials, transactions stored in this app is fake
+
+
 -- Fonts used
 - Credit Card font
 - F25 Bank Printer

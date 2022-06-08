@@ -1,7 +1,9 @@
 # PROJECT-OMEGAPAY
 Desktop Banking Application - OmegaPay
 
-This is a fun project aim to mimic desktop banking app, obviously all the cards, names, credentials, transactions stored in this app is fake
+This is a fun project aim to mimic desktop banking app, using Java Swing, and SQLServer to build this desktop application that
+simulates the functionality of a banking app, users can view transaction history, wallet balance, linked debit cards, and transfer money to other
+accounts as well as update their profile information. All the cards, names, credentials, transactions stored in this app is fake
 
 
 -- Fonts used
